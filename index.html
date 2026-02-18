@@ -3,97 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validador de Datos Excel</title>
+    <title>Validador de Datos Excel - Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; }
+        :root {
+            --primary: #2563eb;
+            --bg-color: #f1f5f9;
+            --panel-bg: #ffffff;
+            --border: #e2e8f0;
+            --text: #334155;
+        }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text);
+            margin: 0; 
+            padding: 20px; 
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid var(--border); }
+        
+        .dashboard {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            overflow: hidden; /* Evita que el body haga scroll */
+        }
+
+        /* Panel Izquierdo: Controles */
+        .panel-controles {
+            width: 350px;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Panel Derecho: Vista Previa */
+        .panel-vista {
+            flex: 1;
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Contiene la tabla */
+        }
+
         .form-group { margin-bottom: 15px; }
-        label { font-weight: bold; display: block; margin-bottom: 5px; }
-        input[type="text"], textarea { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { background-color: #007BFF; color: white; border: none; padding: 10px 15px; cursor: pointer; font-size: 16px; border-radius: 5px; }
-        button:hover { background-color: #0056b3; }
+        label { font-weight: 600; font-size: 14px; display: block; margin-bottom: 8px; color: #475569; }
+        input[type="text"], input[type="file"], select, textarea { 
+            width: 100%; padding: 10px; box-sizing: border-box; 
+            border: 1px solid var(--border); border-radius: 5px; font-family: inherit;
+        }
+        textarea { resize: vertical; }
+        
+        button { 
+            background-color: var(--primary); color: white; border: none; 
+            padding: 12px 15px; cursor: pointer; font-size: 16px; 
+            font-weight: bold; border-radius: 5px; transition: background 0.3s;
+            margin-top: auto;
+        }
+        button:hover { background-color: #1d4ed8; }
+
+        /* Estilos de la Tabla */
+        .table-container {
+            overflow: auto; /* Scroll interno para la tabla */
+            flex: 1;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; white-space: nowrap; }
+        th { background-color: #f8fafc; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 var(--border); }
+        tbody tr:hover { background-color: #f1f5f9; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .info-text { font-size: 13px; color: #64748b; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-    <h2>Validación de Datos Exactos</h2>
+    <div class="dashboard">
+        <div class="panel-controles">
+            <h2>Configuración</h2>
 
-    <div class="form-group">
-        <label>1. Cargar archivo Excel:</label>
-        <input type="file" id="archivoExcel" accept=".xlsx, .xls">
+            <div class="form-group">
+                <label>1. Cargar archivo Excel:</label>
+                <input type="file" id="archivoExcel" accept=".xlsx, .xls">
+            </div>
+
+            <div class="form-group">
+                <label>2. Seleccionar Hoja:</label>
+                <select id="selectorHoja">
+                    <option value="">Sube un archivo primero...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>3. Columna a validar (Ej: Codigo_ID):</label>
+                <input type="text" id="nombreColumna" placeholder="Escribe el nombre exacto">
+            </div>
+
+            <div class="form-group">
+                <label>4. Datos a buscar (uno por línea):</label>
+                <textarea id="datosReferencia" rows="8" placeholder="Dato1&#10;Dato2&#10;Dato3"></textarea>
+            </div>
+
+            <button id="btnComparar">Comparar y Descargar</button>
+        </div>
+
+        <div class="panel-vista">
+            <h2>Vista Previa de Datos</h2>
+            <p class="info-text" id="infoVistaPrevia">Sube un archivo para visualizar los primeros 100 registros.</p>
+            
+            <div class="table-container">
+                <table id="tablaVistaPrevia">
+                    <thead><tr id="tablaHead"></tr></thead>
+                    <tbody id="tablaBody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
-
-    <div class="form-group">
-        <label>2. Nombre de la columna a validar (en el Excel):</label>
-        <input type="text" id="nombreColumna" placeholder="Ejemplo: Codigo_ID">
-    </div>
-
-    <div class="form-group">
-        <label>3. Datos para la validación (Pega aquí la lista de datos exactos, uno por línea):</label>
-        <textarea id="datosReferencia" rows="8" placeholder="Dato1&#10;Dato2&#10;Dato3"></textarea>
-    </div>
-
-    <button id="btnComparar">Comparar y Descargar</button>
 
     <script>
+        let workbookGlobal = null; // Guardamos el archivo Excel cargado en memoria
+
+        // 1. Escuchar cuando se sube un archivo
+        document.getElementById('archivoExcel').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                workbookGlobal = XLSX.read(data, { type: 'array' });
+
+                // Llenar el selector de hojas
+                const selector = document.getElementById('selectorHoja');
+                selector.innerHTML = ''; // Limpiar opciones anteriores
+                
+                workbookGlobal.SheetNames.forEach(nombreHoja => {
+                    const option = document.createElement('option');
+                    option.value = nombreHoja;
+                    option.textContent = nombreHoja;
+                    selector.appendChild(option);
+                });
+
+                // Mostrar la vista previa de la primera hoja por defecto
+                renderizarVistaPrevia(workbookGlobal.SheetNames[0]);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 2. Escuchar cuando el usuario cambia de hoja en el desplegable
+        document.getElementById('selectorHoja').addEventListener('change', function(e) {
+            renderizarVistaPrevia(e.target.value);
+        });
+
+        // 3. Función para dibujar la tabla en pantalla
+        function renderizarVistaPrevia(nombreHoja) {
+            if (!workbookGlobal) return;
+
+            const worksheet = workbookGlobal.Sheets[nombreHoja];
+            // Convertimos la hoja a JSON. defval: "" evita que ignore celdas vacías
+            const jsonExcel = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+            const thead = document.getElementById('tablaHead');
+            const tbody = document.getElementById('tablaBody');
+            
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+
+            if (jsonExcel.length === 0) {
+                document.getElementById('infoVistaPrevia').textContent = `La hoja "${nombreHoja}" está vacía.`;
+                return;
+            }
+
+            // Extraer los encabezados de las columnas
+            const columnas = Object.keys(jsonExcel[0]);
+            
+            // Dibujar encabezados (<th>)
+            columnas.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                thead.appendChild(th);
+            });
+
+            // Dibujar filas (solo las primeras 100 para no congelar el navegador)
+            const limite = Math.min(jsonExcel.length, 100);
+            document.getElementById('infoVistaPrevia').textContent = `Mostrando ${limite} de ${jsonExcel.length} filas en la hoja "${nombreHoja}".`;
+
+            for (let i = 0; i < limite; i++) {
+                const filaData = jsonExcel[i];
+                const tr = document.createElement('tr');
+                
+                columnas.forEach(col => {
+                    const td = document.createElement('td');
+                    td.textContent = filaData[col];
+                    tr.appendChild(td);
+                });
+                
+                tbody.appendChild(tr);
+            }
+        }
+
+        // 4. Lógica del Botón de Comparación
         document.getElementById('btnComparar').addEventListener('click', function() {
-            const archivoInput = document.getElementById('archivoExcel');
+            if (!workbookGlobal) return alert("Por favor, sube un archivo Excel primero.");
+            
+            const nombreHoja = document.getElementById('selectorHoja').value;
             const nombreColumna = document.getElementById('nombreColumna').value.trim();
             const datosReferenciaRaw = document.getElementById('datosReferencia').value;
 
-            // Validaciones previas
-            if (archivoInput.files.length === 0) return alert("Por favor, sube un archivo Excel.");
-            if (!nombreColumna) return alert("Por favor, escribe el nombre de la columna.");
+            if (!nombreColumna) return alert("Por favor, escribe el nombre de la columna a validar.");
             if (!datosReferenciaRaw) return alert("Por favor, ingresa los datos de validación.");
 
-            // Limpiamos los datos de referencia: los separamos por saltos de línea y quitamos espacios extra
             const arrayReferencia = datosReferenciaRaw.split('\n')
                                                       .map(dato => dato.trim())
                                                       .filter(dato => dato !== "");
 
-            const reader = new FileReader();
+            const worksheet = workbookGlobal.Sheets[nombreHoja];
+            let jsonExcel = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+            if (jsonExcel.length > 0 && !(nombreColumna in jsonExcel[0])) {
+                return alert(`No se encontró la columna '${nombreColumna}' en la hoja '${nombreHoja}'. Revisa la tabla de vista previa para asegurarte de copiar el nombre exacto.`);
+            }
 
-                // Tomamos la primera hoja del Excel
-                const primeraHoja = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[primeraHoja];
+            // Procesar validación
+            jsonExcel = jsonExcel.map(fila => {
+                const valorCelda = fila[nombreColumna] !== undefined ? String(fila[nombreColumna]).trim() : "";
+                const esValido = arrayReferencia.includes(valorCelda);
+                fila['Estado de Validación'] = esValido ? 'DIGITALIZADO' : 'NO DIGITALIZADO';
+                return fila;
+            });
 
-                // Convertimos la hoja a un arreglo de objetos JSON
-                let jsonExcel = XLSX.utils.sheet_to_json(worksheet);
+            // Crear nuevo Excel
+            const nuevaHoja = XLSX.utils.json_to_sheet(jsonExcel);
+            const nuevoWorkbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(nuevoWorkbook, nuevaHoja, nombreHoja + "_Validado");
 
-                // Verificamos si la columna existe en la primera fila
-                if (jsonExcel.length > 0 && !(nombreColumna in jsonExcel[0])) {
-                    return alert("No se encontró la columna '" + nombreColumna + "' en el Excel. Verifica las mayúsculas/minúsculas.");
-                }
-
-                // Procesamos cada fila para la comparación EXACTA
-                jsonExcel = jsonExcel.map(fila => {
-                    // Obtenemos el valor de la celda y lo convertimos a texto para asegurar la exactitud
-                    const valorCelda = fila[nombreColumna] !== undefined ? String(fila[nombreColumna]).trim() : "";
-                    
-                    // Comparamos si el valor existe en nuestra lista de referencia
-                    const esValido = arrayReferencia.includes(valorCelda);
-
-                    // Añadimos la nueva columna con el resultado
-                    fila['Estado de Validación'] = esValido ? 'DIGITALIZADO' : 'NO DIGITALIZADO';
-                    
-                    return fila;
-                });
-
-                // Convertimos el JSON actualizado de vuelta a una hoja de Excel
-                const nuevaHoja = XLSX.utils.json_to_sheet(jsonExcel);
-                const nuevoWorkbook = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(nuevoWorkbook, nuevaHoja, "Resultados");
-
-                // Descargamos el archivo
-                XLSX.writeFile(nuevoWorkbook, "Excel_Validado.xlsx");
-            };
-
-            // Leemos el archivo cargado
-            reader.readAsArrayBuffer(archivoInput.files[0]);
+            XLSX.writeFile(nuevoWorkbook, "Excel_Validado.xlsx");
         });
     </script>
 </body>
