@@ -86,18 +86,14 @@
         .col-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
         .col-pill.selected:hover { background: #dc2626; border-color: #dc2626; }
         
-        /* Píldora de Espacio Vacío */
         .col-pill.empty-pill { background: #e2e8f0; color: #475569; border-color: #cbd5e1; font-style: italic; }
         .col-pill.empty-pill:hover { background: #ef4444; border-color: #ef4444; color: white; }
-
         .btn-eliminar-bloque { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; float: right; font-size: 12px; }
 
-        /* Estilos del Input de Rango con Botón de Mouse */
+        /* Input de Rango y Modal */
         .rango-input-group { display: flex; gap: 5px; }
         .btn-mouse { background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 5px; cursor: pointer; padding: 0 10px; transition: background 0.2s; display: flex; align-items: center; justify-content: center; }
         .btn-mouse:hover { background: #cbd5e1; }
-
-        /* MODAL DE SELECCIÓN VISUAL */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 90%; max-width: 1200px; height: 85vh; border-radius: 8px; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; }
         .modal-header { padding: 15px 20px; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
@@ -105,7 +101,6 @@
         .modal-body { flex: 1; overflow: auto; padding: 0; position: relative; user-select: none; }
         .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; }
         
-        /* Tabla del Modal */
         table.grid-select { width: max-content; border-collapse: collapse; }
         table.grid-select th { background: #e2e8f0; text-align: center; color: #475569; position: sticky; top: 0; z-index: 10; font-size: 12px; padding: 4px 8px; }
         table.grid-select th.row-header { position: sticky; left: 0; z-index: 11; width: 30px; background: #e2e8f0; }
@@ -198,6 +193,7 @@
         // VARIABLES GLOBALES
         // ==========================================
         let wb1 = null; let wb2 = null;
+        let fileName1 = ""; let fileName2 = ""; // <-- NUEVO: Para guardar los nombres de archivo en el validador
         let idBloqueCounter = 0;
         const stateArmar = {};
 
@@ -221,107 +217,51 @@
         // ==========================================
         // LÓGICA MODAL DE SELECCIÓN (RATÓN)
         // ==========================================
-        let isSelecting = false;
-        let startRow = -1, startCol = -1, endRow = -1, endCol = -1;
-        let targetInputIdParaModal = "";
-
-        function numToCol(num) {
-            let col = '';
-            while (num >= 0) { col = String.fromCharCode((num % 26) + 65) + col; num = Math.floor(num / 26) - 1; }
-            return col;
-        }
-
+        let isSelecting = false; let startRow = -1, startCol = -1, endRow = -1, endCol = -1; let targetInputIdParaModal = "";
+        function numToCol(num) { let col = ''; while (num >= 0) { col = String.fromCharCode((num % 26) + 65) + col; num = Math.floor(num / 26) - 1; } return col; }
+        
         function abrirModal(wbRef, idHoja, idInputRango) {
             let workbook = null;
-            if (wbRef === 'wb1') workbook = wb1;
-            else if (wbRef === 'wb2') workbook = wb2;
-            else if (wbRef.startsWith('armar-')) {
-                const id = wbRef.split('-')[1];
-                workbook = stateArmar[id].workbook;
-            }
-
+            if (wbRef === 'wb1') workbook = wb1; else if (wbRef === 'wb2') workbook = wb2;
+            else if (wbRef.startsWith('armar-')) { const id = wbRef.split('-')[1]; workbook = stateArmar[id].workbook; }
             if (!workbook) return alert("Sube un archivo primero.");
-            const nombreHoja = document.getElementById(idHoja).value;
-            if (!nombreHoja) return alert("Selecciona una hoja primero.");
-
+            const nombreHoja = document.getElementById(idHoja).value; if (!nombreHoja) return alert("Selecciona una hoja primero.");
             targetInputIdParaModal = idInputRango;
-            
             const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], { header: 1, defval: "" });
-            renderizarGridModal(rawData);
-            document.getElementById('modalSeleccion').style.display = 'flex';
+            renderizarGridModal(rawData); document.getElementById('modalSeleccion').style.display = 'flex';
         }
 
         function cerrarModal() { document.getElementById('modalSeleccion').style.display = 'none'; }
-
+        
         function aplicarRangoModal() {
             if (startRow !== -1 && endRow !== -1) {
-                const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow);
-                const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
+                const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow); const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
                 const celdaInicio = numToCol(minC) + (minR + 1); const celdaFin = numToCol(maxC) + (maxR + 1);
-                
-                const inputElement = document.getElementById(targetInputIdParaModal);
-                inputElement.value = `${celdaInicio}:${celdaFin}`;
-                inputElement.dispatchEvent(new Event('change'));
+                const inputElement = document.getElementById(targetInputIdParaModal); inputElement.value = `${celdaInicio}:${celdaFin}`; inputElement.dispatchEvent(new Event('change'));
             }
             cerrarModal();
         }
 
         function renderizarGridModal(data) {
             const container = document.getElementById('modalGridContainer'); container.innerHTML = '';
-            
-            const limitRows = Math.min(data.length, 100);
-            let maxCols = 0;
-            for(let i=0; i<limitRows; i++) { if(data[i].length > maxCols) maxCols = data[i].length; }
-            if (maxCols === 0) maxCols = 10;
-
+            const limitRows = Math.min(data.length, 100); let maxCols = 0; for(let i=0; i<limitRows; i++) { if(data[i].length > maxCols) maxCols = data[i].length; } if (maxCols === 0) maxCols = 10;
             const table = document.createElement('table'); table.className = 'grid-select';
-            
-            const thead = document.createElement('thead'); const headTr = document.createElement('tr');
-            const thCorner = document.createElement('th'); thCorner.className = 'corner'; headTr.appendChild(thCorner);
-            
-            for(let c = 0; c < maxCols; c++) { const th = document.createElement('th'); th.textContent = numToCol(c); headTr.appendChild(th); }
-            thead.appendChild(headTr); table.appendChild(thead);
-
+            const thead = document.createElement('thead'); const headTr = document.createElement('tr'); const thCorner = document.createElement('th'); thCorner.className = 'corner'; headTr.appendChild(thCorner);
+            for(let c = 0; c < maxCols; c++) { const th = document.createElement('th'); th.textContent = numToCol(c); headTr.appendChild(th); } thead.appendChild(headTr); table.appendChild(thead);
             const tbody = document.createElement('tbody');
             for (let r = 0; r < limitRows; r++) {
-                const tr = document.createElement('tr');
-                const thRow = document.createElement('th'); thRow.className = 'row-header'; thRow.textContent = r + 1; tr.appendChild(thRow);
-
+                const tr = document.createElement('tr'); const thRow = document.createElement('th'); thRow.className = 'row-header'; thRow.textContent = r + 1; tr.appendChild(thRow);
                 for (let c = 0; c < maxCols; c++) {
-                    const td = document.createElement('td');
-                    td.textContent = data[r][c] !== undefined ? data[r][c] : '';
-                    td.dataset.r = r; td.dataset.c = c;
-                    td.addEventListener('mousedown', () => iniciarSeleccion(r, c));
-                    td.addEventListener('mouseenter', () => actualizarSeleccion(r, c));
-                    td.addEventListener('mouseup', () => finalizarSeleccion(r, c));
-                    tr.appendChild(td);
-                }
-                tbody.appendChild(tr);
-            }
-            table.appendChild(tbody); container.appendChild(table);
-            table.addEventListener('dragstart', (e) => e.preventDefault());
+                    const td = document.createElement('td'); td.textContent = data[r][c] !== undefined ? data[r][c] : ''; td.dataset.r = r; td.dataset.c = c;
+                    td.addEventListener('mousedown', () => iniciarSeleccion(r, c)); td.addEventListener('mouseenter', () => actualizarSeleccion(r, c)); td.addEventListener('mouseup', () => finalizarSeleccion(r, c)); tr.appendChild(td);
+                } tbody.appendChild(tr);
+            } table.appendChild(tbody); container.appendChild(table); table.addEventListener('dragstart', (e) => e.preventDefault());
         }
 
         function iniciarSeleccion(r, c) { isSelecting = true; startRow = r; startCol = c; endRow = r; endCol = c; dibujarSeleccion(); }
         function actualizarSeleccion(r, c) { if (isSelecting) { endRow = r; endCol = c; dibujarSeleccion(); } }
-        function finalizarSeleccion(r, c) { 
-            if (isSelecting) { 
-                endRow = r; endCol = c; isSelecting = false; dibujarSeleccion(); 
-                const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow);
-                const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
-                document.getElementById('modalRangoActual').textContent = `Rango: ${numToCol(minC)}${minR + 1}:${numToCol(maxC)}${maxR + 1}`;
-            } 
-        }
-        function dibujarSeleccion() {
-            const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow);
-            const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
-            document.querySelectorAll('.grid-select td').forEach(td => {
-                const r = parseInt(td.dataset.r); const c = parseInt(td.dataset.c);
-                if (r >= minR && r <= maxR && c >= minC && c <= maxC) td.classList.add('selected');
-                else td.classList.remove('selected');
-            });
-        }
-
+        function finalizarSeleccion(r, c) { if (isSelecting) { endRow = r; endCol = c; isSelecting = false; dibujarSeleccion(); const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow); const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol); document.getElementById('modalRangoActual').textContent = `Rango: ${numToCol(minC)}${minR + 1}:${numToCol(maxC)}${maxR + 1}`; } }
+        function dibujarSeleccion() { const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow); const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol); document.querySelectorAll('.grid-select td').forEach(td => { const r = parseInt(td.dataset.r); const c = parseInt(td.dataset.c); if (r >= minR && r <= maxR && c >= minC && c <= maxC) td.classList.add('selected'); else td.classList.remove('selected'); }); }
 
         // ==========================================
         // LÓGICA: PESTAÑA 1 - VALIDADOR
@@ -333,7 +273,11 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
-                    if (wbVarName === 'wb1') wb1 = workbook; else wb2 = workbook;
+                    
+                    // <-- MODIFICACIÓN: Guardamos el nombre del archivo al cargarlo
+                    if (wbVarName === 'wb1') { wb1 = workbook; fileName1 = file.name; } 
+                    else { wb2 = workbook; fileName2 = file.name; }
+                    
                     const selectorHoja = document.getElementById(hojaSelectId); selectorHoja.innerHTML = ''; 
                     workbook.SheetNames.forEach(nombre => selectorHoja.appendChild(new Option(nombre, nombre)));
                     actualizarHojaValidador(workbook, workbook.SheetNames[0], colSelectId, headId, bodyId, infoId, rangoInputId);
@@ -398,7 +342,12 @@
             
             jsonPrincipal = jsonPrincipal.map(fila => {
                 const valorCelda = fila[col1] !== undefined ? String(fila[col1]).trim() : "";
-                let nuevaFila = { "Hoja Origen": nombreHoja1 };
+                
+                // <-- MODIFICACIÓN: Inyectamos Archivo Origen y Hoja Origen como las primeras columnas
+                let nuevaFila = { 
+                    "Archivo Origen": fileName1, 
+                    "Hoja Origen": nombreHoja1 
+                };
                 Object.assign(nuevaFila, fila); 
                 nuevaFila['ESTADOS'] = setReferencia.has(valorCelda) ? 'DIGITALIZADO' : 'NO DIGITALIZADO'; 
                 return nuevaFila;
@@ -417,7 +366,8 @@
         function crearBloqueArmado() {
             idBloqueCounter++;
             const id = idBloqueCounter;
-            stateArmar[id] = { workbook: null, selectedCols: [] };
+            // <-- MODIFICACIÓN: Agregamos la propiedad fileName al estado
+            stateArmar[id] = { workbook: null, selectedCols: [], fileName: "" };
 
             const html = `
                 <div class="bloque-archivo" id="bloque-${id}">
@@ -465,6 +415,7 @@
             reader.onload = function(e) {
                 const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
                 stateArmar[id].workbook = workbook;
+                stateArmar[id].fileName = file.name; // <-- MODIFICACIÓN: Capturamos el nombre del archivo
                 const selector = document.getElementById(`hojaArmar-${id}`); selector.innerHTML = '';
                 workbook.SheetNames.forEach(nombre => selector.appendChild(new Option(nombre, nombre)));
                 renderizarColumnasArmar(id);
@@ -475,34 +426,26 @@
         function renderizarColumnasArmar(id) {
             const workbook = stateArmar[id].workbook;
             if(!workbook) return;
-
             const nombreHoja = document.getElementById(`hojaArmar-${id}`).value;
             const rangoVal = document.getElementById(`rangoArmar-${id}`).value;
             const options = getSheetJsOptions(rangoVal);
-
             let jsonExcel = [];
             try { jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], options); } 
             catch(e) { document.getElementById(`disponibles-${id}`).innerHTML = '<i style="color:red">Rango inválido</i>'; return; }
-
             stateArmar[id].selectedCols = []; 
             const divDisp = document.getElementById(`disponibles-${id}`); const divSel = document.getElementById(`seleccionadas-${id}`);
             divDisp.innerHTML = ''; divSel.innerHTML = '<i>Aún no seleccionadas</i>';
-
             if (jsonExcel.length === 0) { divDisp.innerHTML = '<i>No hay datos</i>'; return; }
-
             const columnas = Object.keys(jsonExcel[0]);
             columnas.forEach(col => {
-                const pill = document.createElement('div');
-                pill.className = 'col-pill'; pill.textContent = col;
-                pill.onclick = () => toggleColumna(id, col, pill);
-                divDisp.appendChild(pill);
+                const pill = document.createElement('div'); pill.className = 'col-pill'; pill.textContent = col;
+                pill.onclick = () => toggleColumna(id, col, pill); divDisp.appendChild(pill);
             });
         }
 
         function toggleColumna(id, colName, pillElement) {
             const divDisp = document.getElementById(`disponibles-${id}`); const divSel = document.getElementById(`seleccionadas-${id}`);
             const isSelected = pillElement.classList.contains('selected');
-
             if (isSelected) {
                 pillElement.classList.remove('selected'); divDisp.appendChild(pillElement); 
                 stateArmar[id].selectedCols = stateArmar[id].selectedCols.filter(c => c !== colName);
@@ -514,26 +457,13 @@
             else if (divSel.querySelector('i')) divSel.querySelector('i').remove();
         }
 
-        // Nueva función para añadir espacios vacíos
         function agregarColumnaVacia(id) {
             const divSel = document.getElementById(`seleccionadas-${id}`);
             if (divSel.querySelector('i')) divSel.querySelector('i').remove();
-            
-            // Creamos un ID único para identificar internamente este espacio vacío
             const uniqueId = '__EMPTY__' + Date.now() + Math.floor(Math.random() * 1000);
             stateArmar[id].selectedCols.push(uniqueId);
-            
-            const pill = document.createElement('div');
-            pill.className = 'col-pill selected empty-pill';
-            pill.textContent = '[ Espacio Vacío ]';
-            
-            // Al hacer clic en un espacio vacío, simplemente se elimina
-            pill.onclick = () => {
-                pill.remove();
-                stateArmar[id].selectedCols = stateArmar[id].selectedCols.filter(c => c !== uniqueId);
-                if (stateArmar[id].selectedCols.length === 0) divSel.innerHTML = '<i>Aún no seleccionadas</i>';
-            };
-            
+            const pill = document.createElement('div'); pill.className = 'col-pill selected empty-pill'; pill.textContent = '[ Espacio Vacío ]';
+            pill.onclick = () => { pill.remove(); stateArmar[id].selectedCols = stateArmar[id].selectedCols.filter(c => c !== uniqueId); if (stateArmar[id].selectedCols.length === 0) divSel.innerHTML = '<i>Aún no seleccionadas</i>'; };
             divSel.appendChild(pill);
         }
 
@@ -543,17 +473,13 @@
 
             let unificados = []; let masterHeadersRaw = []; let columnasCount = 0;
 
-            // Extraer cabeceras maestras
             for (let id of keysIds) {
                 if (stateArmar[id].selectedCols.length > 0) {
-                    masterHeadersRaw = stateArmar[id].selectedCols; 
-                    columnasCount = masterHeadersRaw.length; 
-                    break;
+                    masterHeadersRaw = stateArmar[id].selectedCols; columnasCount = masterHeadersRaw.length; break;
                 }
             }
             if (columnasCount === 0) return alert("Selecciona al menos una columna en el archivo principal.");
 
-            // Limpiamos los nombres de las cabeceras por si el archivo maestro tiene "Espacios vacíos"
             let masterHeaders = masterHeadersRaw.map((h, index) => h.startsWith('__EMPTY__') ? `Columna_Vacía_${index + 1}` : h);
 
             for (let id of keysIds) {
@@ -565,17 +491,18 @@
                 const jsonData = XLSX.utils.sheet_to_json(st.workbook.Sheets[nombreHoja], opts);
 
                 jsonData.forEach(filaOriginal => {
-                    let nuevaFila = { "Hoja Origen": nombreHoja };
+                    // <-- MODIFICACIÓN: Inyectamos Archivo Origen y Hoja Origen usando st.fileName
+                    let nuevaFila = { 
+                        "Archivo Origen": st.fileName, 
+                        "Hoja Origen": nombreHoja 
+                    };
                     
                     for (let i = 0; i < columnasCount; i++) {
                         const colNameLocal = colsLocales[i];
                         const headerFinal = masterHeaders[i];
-
-                        // Si la columna elegida no es un espacio vacío y existe en la fila
                         if (colNameLocal !== undefined && !colNameLocal.startsWith('__EMPTY__') && filaOriginal[colNameLocal] !== undefined) {
                             nuevaFila[headerFinal] = filaOriginal[colNameLocal];
                         } else {
-                            // Si es un "Espacio Vacío", o no se seleccionó esa posición
                             nuevaFila[headerFinal] = ""; 
                         }
                     }
