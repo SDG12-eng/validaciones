@@ -525,12 +525,14 @@
                     masterHeaders = stateArmar[id].selectedCols; columnasCount = masterHeaders.length; break;
                 }
             }
-            if (columnasCount === 0) return alert("Selecciona al menos una columna.");
+            if (columnasCount === 0) return alert("Selecciona al menos una columna en el archivo principal.");
 
             for (let id of keysIds) {
                 const st = stateArmar[id]; const colsLocales = st.selectedCols;
                 if (colsLocales.length === 0) continue; 
-                if (colsLocales.length !== columnasCount) return alert(`Error: El Archivo ${id} no tiene ${columnasCount} columnas.`);
+                
+                // ELIMINADA LA RESTRICCIÓN ESTRICTA DE COLUMNAS
+                // Ya no retornamos error si tienen menos columnas que el archivo maestro.
 
                 const nombreHoja = document.getElementById(`hojaArmar-${id}`).value;
                 const opts = getSheetJsOptions(document.getElementById(`rangoArmar-${id}`).value);
@@ -540,7 +542,14 @@
                     // Forzamos "Hoja Origen" al principio
                     let nuevaFila = { "Hoja Origen": nombreHoja };
                     for (let i = 0; i < columnasCount; i++) {
-                        nuevaFila[masterHeaders[i]] = filaOriginal[colsLocales[i]] !== undefined ? filaOriginal[colsLocales[i]] : "";
+                        // Si el archivo actual no seleccionó esta columna (ej. i=3 y solo seleccionó 2), colsLocales[i] será undefined
+                        const colNameLocal = colsLocales[i];
+                        if (colNameLocal !== undefined && filaOriginal[colNameLocal] !== undefined) {
+                            nuevaFila[masterHeaders[i]] = filaOriginal[colNameLocal];
+                        } else {
+                            // Si no hay dato o no se seleccionó columna equivalente, dejamos la celda en blanco
+                            nuevaFila[masterHeaders[i]] = ""; 
+                        }
                     }
                     unificados.push(nuevaFila);
                 });
