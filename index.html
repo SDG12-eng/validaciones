@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validador de Datos Excel - Doble Archivo</title>
+    <title>Herramientas de Datos Excel - Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #2563eb;
+            --primary-hover: #1d4ed8;
             --success: #16a34a;
+            --success-hover: #15803d;
             --bg-color: #f8fafc;
             --panel-bg: #ffffff;
             --border: #e2e8f0;
@@ -26,282 +28,379 @@
             display: flex;
             flex-direction: column;
         }
-        h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid var(--border); font-size: 20px; }
-        h3 { font-size: 16px; margin-bottom: 10px; color: #475569; }
         
-        .dashboard {
+        /* Estilos de Pestañas (Tabs) */
+        .tabs {
             display: flex;
-            gap: 20px;
-            flex: 1;
-            overflow: hidden;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+            gap: 10px;
         }
-
-        /* Panel Izquierdo: Controles */
-        .panel-controles {
-            width: 380px;
-            background: var(--panel-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            gap: 20px;
+        .tab-btn {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
         }
-
-        .seccion-archivo {
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background-color: #fafafa;
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
         }
-        .seccion-principal { border-left: 4px solid var(--primary); }
-        .seccion-referencia { border-left: 4px solid var(--ref-color); }
+        .tab-content { display: none; flex: 1; overflow: hidden; }
+        .tab-content.active { display: flex; }
 
+        /* Estilos Comunes */
+        h2 { margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid var(--border); font-size: 20px; }
+        h3 { font-size: 16px; margin-bottom: 10px; color: #475569; margin-top: 0; }
         .form-group { margin-bottom: 12px; }
         label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 5px; color: #475569; }
         input[type="file"], select { 
             width: 100%; padding: 8px; box-sizing: border-box; 
             border: 1px solid var(--border); border-radius: 5px; font-family: inherit; font-size: 13px;
         }
+        button.btn-main { background-color: var(--primary); color: white; border: none; padding: 10px 15px; cursor: pointer; font-size: 14px; font-weight: bold; border-radius: 5px; }
+        button.btn-main:hover { background-color: var(--primary-hover); }
+        button.btn-success { background-color: var(--success); color: white; border: none; padding: 15px; cursor: pointer; font-size: 16px; font-weight: bold; border-radius: 5px; margin-top: auto; }
+        button.btn-success:hover { background-color: var(--success-hover); }
+
+        /* Estilos - Tab Validador */
+        .validador-layout { display: flex; gap: 20px; width: 100%; height: 100%; }
+        .panel-controles { width: 380px; background: var(--panel-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow-y: auto; gap: 20px; }
+        .seccion-archivo { padding: 15px; border: 1px solid var(--border); border-radius: 6px; background-color: #fafafa; }
+        .seccion-principal { border-left: 4px solid var(--primary); }
+        .seccion-referencia { border-left: 4px solid var(--ref-color); }
+        .panel-vista { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow: hidden; }
+        .vista-contenedor { flex: 1; background: var(--panel-bg); padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         
-        button { 
-            background-color: var(--success); color: white; border: none; 
-            padding: 15px; cursor: pointer; font-size: 16px; 
-            font-weight: bold; border-radius: 5px; transition: background 0.3s;
-            margin-top: auto;
-        }
-        button:hover { background-color: #15803d; }
-
-        /* Panel Derecho: Vista Previa Doble */
-        .panel-vista {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            overflow: hidden;
-        }
-
-        .vista-contenedor {
-            flex: 1;
-            background: var(--panel-bg);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .table-container {
-            overflow: auto; 
-            flex: 1;
-            border: 1px solid var(--border);
-            border-radius: 5px;
-            margin-top: 10px;
-        }
+        /* Tablas */
+        .table-container { overflow: auto; flex: 1; border: 1px solid var(--border); border-radius: 5px; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; white-space: nowrap; }
         th { background-color: #f1f5f9; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 var(--border); }
         tbody tr:hover { background-color: #f8fafc; }
         .info-text { font-size: 12px; color: #64748b; margin: 0; }
+
+        /* Estilos - Tab Armar Excel */
+        .armar-layout { display: flex; flex-direction: column; width: 100%; height: 100%; gap: 15px; }
+        .armar-toolbar { display: flex; justify-content: space-between; background: var(--panel-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .bloques-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; }
+        
+        .bloque-archivo { background: var(--panel-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-left: 5px solid var(--primary); display: flex; gap: 20px; }
+        .bloque-config { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); padding-right: 20px; }
+        .bloque-columnas { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        
+        .columnas-box { border: 1px dashed var(--border); padding: 10px; border-radius: 6px; min-height: 60px; background: #fafafa; }
+        .columnas-box h4 { margin: 0 0 10px 0; font-size: 13px; color: #64748b; }
+        .col-pill { display: inline-block; padding: 6px 12px; margin: 0 5px 5px 0; background: white; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .col-pill:hover { border-color: var(--primary); color: var(--primary); }
+        .col-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        .col-pill.selected:hover { background: #dc2626; border-color: #dc2626; content: "Quitar"; }
+        
+        .btn-eliminar-bloque { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; float: right; font-size: 12px; }
     </style>
 </head>
 <body>
 
-    <div class="dashboard">
-        <div class="panel-controles">
-            <h2>Configuración de Validación</h2>
+    <div class="tabs">
+        <button class="tab-btn active" onclick="cambiarTab('tab-validador')">1. Validador de Datos</button>
+        <button class="tab-btn" onclick="cambiarTab('tab-armar')">2. Armar / Unificar Excel</button>
+    </div>
 
-            <div class="seccion-archivo seccion-principal">
-                <h3>📘 1. Archivo Principal (A Validar)</h3>
-                <div class="form-group">
-                    <input type="file" id="archivo1" accept=".xlsx, .xls">
+    <div id="tab-validador" class="tab-content active">
+        <div class="validador-layout">
+            <div class="panel-controles">
+                <h2>Configuración de Validación</h2>
+                <div class="seccion-archivo seccion-principal">
+                    <h3>📘 Archivo Principal (A Validar)</h3>
+                    <div class="form-group"><input type="file" id="archivo1" accept=".xlsx, .xls"></div>
+                    <div class="form-group"><label>Hoja:</label><select id="hoja1"><option value="">Sube un archivo...</option></select></div>
+                    <div class="form-group"><label>Columna a validar:</label><select id="col1"><option value="">Selecciona la hoja primero...</option></select></div>
                 </div>
-                <div class="form-group">
-                    <label>Hoja de trabajo:</label>
-                    <select id="hoja1"><option value="">Sube un archivo...</option></select>
+                <div class="seccion-archivo seccion-referencia">
+                    <h3>📙 Archivo de Referencia (Base)</h3>
+                    <div class="form-group"><input type="file" id="archivo2" accept=".xlsx, .xls"></div>
+                    <div class="form-group"><label>Hoja:</label><select id="hoja2"><option value="">Sube un archivo...</option></select></div>
+                    <div class="form-group"><label>Columna con datos exactos:</label><select id="col2"><option value="">Selecciona la hoja primero...</option></select></div>
                 </div>
-                <div class="form-group">
-                    <label>Columna a validar:</label>
-                    <select id="col1"><option value="">Selecciona la hoja primero...</option></select>
-                </div>
+                <button id="btnValidar" class="btn-success">Comparar y Descargar</button>
             </div>
-
-            <div class="seccion-archivo seccion-referencia">
-                <h3>📙 2. Archivo de Referencia (Base)</h3>
-                <div class="form-group">
-                    <input type="file" id="archivo2" accept=".xlsx, .xls">
+            <div class="panel-vista">
+                <div class="vista-contenedor">
+                    <h3>Vista Previa: Archivo Principal</h3><p class="info-text" id="info1">Esperando archivo...</p>
+                    <div class="table-container"><table id="tabla1"><thead id="head1"></thead><tbody id="body1"></tbody></table></div>
                 </div>
-                <div class="form-group">
-                    <label>Hoja de trabajo:</label>
-                    <select id="hoja2"><option value="">Sube un archivo...</option></select>
-                </div>
-                <div class="form-group">
-                    <label>Columna con los datos exactos:</label>
-                    <select id="col2"><option value="">Selecciona la hoja primero...</option></select>
-                </div>
-            </div>
-
-            <button id="btnValidar">Comparar y Descargar Excel</button>
-        </div>
-
-        <div class="panel-vista">
-            <div class="vista-contenedor">
-                <h3 style="margin:0;">Vista Previa: Archivo Principal</h3>
-                <p class="info-text" id="info1">Esperando archivo...</p>
-                <div class="table-container">
-                    <table id="tabla1">
-                        <thead id="head1"></thead><tbody id="body1"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="vista-contenedor">
-                <h3 style="margin:0;">Vista Previa: Archivo de Referencia</h3>
-                <p class="info-text" id="info2">Esperando archivo...</p>
-                <div class="table-container">
-                    <table id="tabla2">
-                        <thead id="head2"></thead><tbody id="body2"></tbody>
-                    </table>
+                <div class="vista-contenedor">
+                    <h3>Vista Previa: Archivo de Referencia</h3><p class="info-text" id="info2">Esperando archivo...</p>
+                    <div class="table-container"><table id="tabla2"><thead id="head2"></thead><tbody id="body2"></tbody></table></div>
                 </div>
             </div>
         </div>
     </div>
 
+    <div id="tab-armar" class="tab-content">
+        <div class="armar-layout">
+            <div class="armar-toolbar">
+                <button id="btnNuevoBloque" class="btn-main">+ Añadir Archivo para Unificar</button>
+                <button id="btnGenerarArmado" class="btn-success" style="margin-top:0; padding:10px 20px;">Generar Excel Unificado</button>
+            </div>
+            
+            <div id="contenedorBloques" class="bloques-container">
+                </div>
+        </div>
+    </div>
+
     <script>
-        // Variables globales para almacenar ambos archivos
-        let wb1 = null; 
-        let wb2 = null;
+        // ==========================================
+        // LÓGICA DE PESTAÑAS (TABS)
+        // ==========================================
+        function cambiarTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
 
-        // --- FUNCIONES DE UTILIDAD ---
+        // ==========================================
+        // LÓGICA: PESTAÑA 1 - VALIDADOR
+        // ==========================================
+        let wb1 = null; let wb2 = null;
 
-        // Función genérica para manejar la carga de archivos y llenar los selectores
-        function procesarArchivo(fileInputId, wbVarName, hojaSelectId, colSelectId, headId, bodyId, infoId) {
+        function procesarArchivoValidador(fileInputId, wbVarName, hojaSelectId, colSelectId, headId, bodyId, infoId) {
             document.getElementById(fileInputId).addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    // Asignar al workbook global correspondiente
+                    const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
                     if (wbVarName === 'wb1') wb1 = workbook; else wb2 = workbook;
-
-                    // Llenar selector de hojas
                     const selectorHoja = document.getElementById(hojaSelectId);
                     selectorHoja.innerHTML = ''; 
-                    workbook.SheetNames.forEach(nombre => {
-                        selectorHoja.appendChild(new Option(nombre, nombre));
-                    });
-
-                    // Extraer y mostrar datos de la primera hoja
-                    actualizarHoja(workbook, workbook.SheetNames[0], colSelectId, headId, bodyId, infoId);
+                    workbook.SheetNames.forEach(nombre => selectorHoja.appendChild(new Option(nombre, nombre)));
+                    actualizarHojaValidador(workbook, workbook.SheetNames[0], colSelectId, headId, bodyId, infoId);
                 };
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        // Función para actualizar columnas y vista previa cuando cambia la hoja
-        function actualizarHoja(workbook, nombreHoja, colSelectId, headId, bodyId, infoId) {
-            const worksheet = workbook.Sheets[nombreHoja];
-            const jsonExcel = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-            
-            const selectorCol = document.getElementById(colSelectId);
-            selectorCol.innerHTML = '';
-
-            const thead = document.getElementById(headId);
-            const tbody = document.getElementById(bodyId);
+        function actualizarHojaValidador(workbook, nombreHoja, colSelectId, headId, bodyId, infoId) {
+            const jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], { defval: "" });
+            const selectorCol = document.getElementById(colSelectId); selectorCol.innerHTML = '';
+            const thead = document.getElementById(headId); const tbody = document.getElementById(bodyId);
             thead.innerHTML = ''; tbody.innerHTML = '';
 
-            if (jsonExcel.length === 0) {
-                document.getElementById(infoId).textContent = "La hoja está vacía.";
-                return;
-            }
+            if (jsonExcel.length === 0) { document.getElementById(infoId).textContent = "Hoja vacía."; return; }
 
-            // Extraer columnas y llenar el selector (<select>)
             const columnas = Object.keys(jsonExcel[0]);
             columnas.forEach(col => selectorCol.appendChild(new Option(col, col)));
 
-            // Dibujar Vista Previa (Máximo 50 filas para rendimiento)
             const limite = Math.min(jsonExcel.length, 50);
-            document.getElementById(infoId).textContent = `Mostrando ${limite} de ${jsonExcel.length} filas.`;
+            document.getElementById(infoId).textContent = `Mostrando ${limite} filas.`;
 
-            // Encabezados tabla
             const trHead = document.createElement('tr');
-            columnas.forEach(col => {
-                const th = document.createElement('th');
-                th.textContent = col;
-                trHead.appendChild(th);
-            });
+            columnas.forEach(col => { const th = document.createElement('th'); th.textContent = col; trHead.appendChild(th); });
             thead.appendChild(trHead);
 
-            // Cuerpo tabla
             for (let i = 0; i < limite; i++) {
                 const tr = document.createElement('tr');
-                columnas.forEach(col => {
-                    const td = document.createElement('td');
-                    td.textContent = jsonExcel[i][col];
-                    tr.appendChild(td);
-                });
+                columnas.forEach(col => { const td = document.createElement('td'); td.textContent = jsonExcel[i][col]; tr.appendChild(td); });
                 tbody.appendChild(tr);
             }
         }
 
-        // --- ASIGNAR EVENTOS ---
-
-        // Configurar Archivo Principal
-        procesarArchivo('archivo1', 'wb1', 'hoja1', 'col1', 'head1', 'body1', 'info1');
-        document.getElementById('hoja1').addEventListener('change', e => actualizarHoja(wb1, e.target.value, 'col1', 'head1', 'body1', 'info1'));
-
-        // Configurar Archivo Referencia
-        procesarArchivo('archivo2', 'wb2', 'hoja2', 'col2', 'head2', 'body2', 'info2');
-        document.getElementById('hoja2').addEventListener('change', e => actualizarHoja(wb2, e.target.value, 'col2', 'head2', 'body2', 'info2'));
-
-        // --- LÓGICA DE VALIDACIÓN ---
+        procesarArchivoValidador('archivo1', 'wb1', 'hoja1', 'col1', 'head1', 'body1', 'info1');
+        document.getElementById('hoja1').addEventListener('change', e => actualizarHojaValidador(wb1, e.target.value, 'col1', 'head1', 'body1', 'info1'));
+        procesarArchivoValidador('archivo2', 'wb2', 'hoja2', 'col2', 'head2', 'body2', 'info2');
+        document.getElementById('hoja2').addEventListener('change', e => actualizarHojaValidador(wb2, e.target.value, 'col2', 'head2', 'body2', 'info2'));
 
         document.getElementById('btnValidar').addEventListener('click', function() {
-            if (!wb1 || !wb2) return alert("Por favor, sube AMBOS archivos Excel (Principal y Referencia).");
+            if (!wb1 || !wb2) return alert("Sube AMBOS archivos Excel.");
+            const nombreHoja1 = document.getElementById('hoja1').value; const col1 = document.getElementById('col1').value;
+            const nombreHoja2 = document.getElementById('hoja2').value; const col2 = document.getElementById('col2').value;
 
-            const nombreHoja1 = document.getElementById('hoja1').value;
-            const col1 = document.getElementById('col1').value;
-            
-            const nombreHoja2 = document.getElementById('hoja2').value;
-            const col2 = document.getElementById('col2').value;
-
-            if (!col1 || !col2) return alert("Asegúrate de haber seleccionado las columnas en ambos archivos.");
-
-            // 1. Extraer los datos exactos del Archivo de Referencia
             const jsonReferencia = XLSX.utils.sheet_to_json(wb2.Sheets[nombreHoja2], { defval: "" });
-            // Usamos un Set (conjunto) para que la búsqueda sea ultra rápida y evite duplicados
-            const arrayReferencia = jsonReferencia.map(fila => String(fila[col2]).trim());
-            const setReferencia = new Set(arrayReferencia.filter(dato => dato !== ""));
+            const setReferencia = new Set(jsonReferencia.map(fila => String(fila[col2]).trim()).filter(dato => dato !== ""));
 
-            // 2. Procesar el Archivo Principal
             let jsonPrincipal = XLSX.utils.sheet_to_json(wb1.Sheets[nombreHoja1], { defval: "" });
-
             jsonPrincipal = jsonPrincipal.map(fila => {
-                // Tomamos el valor de la celda principal
                 const valorCelda = fila[col1] !== undefined ? String(fila[col1]).trim() : "";
-                
-                // Comparamos usando el Set de referencia
-                const esValido = setReferencia.has(valorCelda);
-                
-                // Añadimos la columna ESTADOS (como solicitaste)
-                fila['ESTADOS'] = esValido ? 'DIGITALIZADO' : 'NO DIGITALIZADO';
-                
+                fila['ESTADOS'] = setReferencia.has(valorCelda) ? 'DIGITALIZADO' : 'NO DIGITALIZADO';
                 return fila;
             });
 
-            // 3. Crear y Descargar el nuevo Excel
-            const nuevaHoja = XLSX.utils.json_to_sheet(jsonPrincipal);
             const nuevoWorkbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(nuevoWorkbook, nuevaHoja, "Validado");
-
+            XLSX.utils.book_append_sheet(nuevoWorkbook, XLSX.utils.json_to_sheet(jsonPrincipal), "Validado");
             XLSX.writeFile(nuevoWorkbook, "Excel_Estado_Validado.xlsx");
         });
+
+        // ==========================================
+        // LÓGICA: PESTAÑA 2 - ARMAR EXCEL
+        // ==========================================
+        let idBloqueCounter = 0;
+        const stateArmar = {}; // Almacena { idBloque: { workbook, selectedCols: [] } }
+
+        document.getElementById('btnNuevoBloque').addEventListener('click', crearBloqueArmado);
+
+        function crearBloqueArmado() {
+            idBloqueCounter++;
+            const id = idBloqueCounter;
+            stateArmar[id] = { workbook: null, selectedCols: [] };
+
+            const html = `
+                <div class="bloque-archivo" id="bloque-${id}">
+                    <div class="bloque-config">
+                        <button class="btn-eliminar-bloque" onclick="eliminarBloque(${id})">X</button>
+                        <h3>Archivo ${id}</h3>
+                        <div class="form-group"><input type="file" id="fileArmar-${id}" accept=".xlsx, .xls"></div>
+                        <div class="form-group"><label>Seleccionar Hoja:</label><select id="hojaArmar-${id}"><option value="">Sube archivo...</option></select></div>
+                    </div>
+                    <div class="bloque-columnas">
+                        <div class="columnas-box">
+                            <h4>1. Columnas Disponibles (Clic para seleccionar)</h4>
+                            <div id="disponibles-${id}"><i>Sube un archivo para ver columnas</i></div>
+                        </div>
+                        <div class="columnas-box" style="background:#f0fdf4; border-color:#86efac;">
+                            <h4>2. Columnas Seleccionadas (Orden de Izquierda a Derecha)</h4>
+                            <div id="seleccionadas-${id}"><i>Aún no has seleccionado columnas</i></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('contenedorBloques').insertAdjacentHTML('beforeend', html);
+
+            // Eventos del nuevo bloque
+            document.getElementById(`fileArmar-${id}`).addEventListener('change', (e) => cargarArchivoArmar(e, id));
+            document.getElementById(`hojaArmar-${id}`).addEventListener('change', (e) => renderizarColumnasArmar(id, e.target.value));
+        }
+
+        function eliminarBloque(id) {
+            document.getElementById(`bloque-${id}`).remove();
+            delete stateArmar[id];
+        }
+
+        function cargarArchivoArmar(event, id) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                stateArmar[id].workbook = workbook;
+                const selector = document.getElementById(`hojaArmar-${id}`);
+                selector.innerHTML = '';
+                workbook.SheetNames.forEach(nombre => selector.appendChild(new Option(nombre, nombre)));
+                renderizarColumnasArmar(id, workbook.SheetNames[0]);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function renderizarColumnasArmar(id, nombreHoja) {
+            const workbook = stateArmar[id].workbook;
+            const jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], { defval: "" });
+            stateArmar[id].selectedCols = []; // Resetear selecciones
+            
+            const divDisp = document.getElementById(`disponibles-${id}`);
+            const divSel = document.getElementById(`seleccionadas-${id}`);
+            divDisp.innerHTML = ''; divSel.innerHTML = '';
+
+            if (jsonExcel.length === 0) { divDisp.innerHTML = '<i>Hoja vacía</i>'; return; }
+
+            const columnas = Object.keys(jsonExcel[0]);
+            
+            columnas.forEach(col => {
+                const pill = document.createElement('div');
+                pill.className = 'col-pill';
+                pill.textContent = col;
+                pill.onclick = () => toggleColumna(id, col, pill);
+                divDisp.appendChild(pill);
+            });
+        }
+
+        function toggleColumna(id, colName, pillElement) {
+            const divDisp = document.getElementById(`disponibles-${id}`);
+            const divSel = document.getElementById(`seleccionadas-${id}`);
+            const isSelected = pillElement.classList.contains('selected');
+
+            if (isSelected) {
+                // Quitar de selección
+                pillElement.classList.remove('selected');
+                divDisp.appendChild(pillElement); // Regresa a disponibles
+                stateArmar[id].selectedCols = stateArmar[id].selectedCols.filter(c => c !== colName);
+            } else {
+                // Agregar a selección
+                pillElement.classList.add('selected');
+                divSel.appendChild(pillElement); // Mueve a seleccionados
+                stateArmar[id].selectedCols.push(colName);
+            }
+            
+            if (stateArmar[id].selectedCols.length === 0) {
+                divSel.innerHTML = '<i>Aún no has seleccionado columnas</i>';
+            } else if (divSel.querySelector('i')) {
+                divSel.querySelector('i').remove();
+            }
+        }
+
+        // --- Lógica de Unificación (Merge) ---
+        document.getElementById('btnGenerarArmado').addEventListener('click', function() {
+            const keysIds = Object.keys(stateArmar);
+            if (keysIds.length === 0) return alert("Añade al menos un archivo.");
+
+            let unificados = [];
+            let masterHeaders = [];
+            let columnasCount = 0;
+
+            // Encontrar la plantilla maestra (El primer bloque con columnas seleccionadas)
+            for (let id of keysIds) {
+                if (stateArmar[id].selectedCols.length > 0) {
+                    masterHeaders = stateArmar[id].selectedCols;
+                    columnasCount = masterHeaders.length;
+                    break;
+                }
+            }
+
+            if (columnasCount === 0) return alert("Selecciona al menos una columna en algún archivo.");
+
+            // Procesar cada bloque
+            for (let id of keysIds) {
+                const st = stateArmar[id];
+                const colsLocales = st.selectedCols;
+                
+                if (colsLocales.length === 0) continue; // Ignorar si no seleccionó nada
+                if (colsLocales.length !== columnasCount) {
+                    return alert(`Error: El Archivo ${id} tiene ${colsLocales.length} columnas seleccionadas, pero la plantilla maestra usa ${columnasCount}. Selecciona la misma cantidad de columnas por archivo para poder apilarlas correctamente.`);
+                }
+
+                const nombreHoja = document.getElementById(`hojaArmar-${id}`).value;
+                const jsonData = XLSX.utils.sheet_to_json(st.workbook.Sheets[nombreHoja], { defval: "" });
+
+                // Mapear los datos de este archivo usando las cabeceras maestras
+                jsonData.forEach(filaOriginal => {
+                    let nuevaFila = {};
+                    // Recorremos el índice de columnas (0, 1, 2...)
+                    for (let i = 0; i < columnasCount; i++) {
+                        const nombreColMaestra = masterHeaders[i];
+                        const nombreColLocal = colsLocales[i];
+                        nuevaFila[nombreColMaestra] = filaOriginal[nombreColLocal] !== undefined ? filaOriginal[nombreColLocal] : "";
+                    }
+                    unificados.push(nuevaFila);
+                });
+            }
+
+            if (unificados.length === 0) return alert("No se encontraron datos para unificar.");
+
+            // Generar y descargar
+            const nuevaHoja = XLSX.utils.json_to_sheet(unificados);
+            const nuevoWorkbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(nuevoWorkbook, nuevaHoja, "Data_Unificada");
+            XLSX.writeFile(nuevoWorkbook, "Excel_Unificado.xlsx");
+        });
+
+        // Crear un bloque vacío por defecto al cargar
+        crearBloqueArmado();
     </script>
 </body>
 </html>
