@@ -193,7 +193,7 @@
         // VARIABLES GLOBALES
         // ==========================================
         let wb1 = null; let wb2 = null;
-        let fileName1 = ""; let fileName2 = ""; // <-- NUEVO: Para guardar los nombres de archivo en el validador
+        let fileName1 = ""; let fileName2 = ""; 
         let idBloqueCounter = 0;
         const stateArmar = {};
 
@@ -217,51 +217,106 @@
         // ==========================================
         // LÓGICA MODAL DE SELECCIÓN (RATÓN)
         // ==========================================
-        let isSelecting = false; let startRow = -1, startCol = -1, endRow = -1, endCol = -1; let targetInputIdParaModal = "";
-        function numToCol(num) { let col = ''; while (num >= 0) { col = String.fromCharCode((num % 26) + 65) + col; num = Math.floor(num / 26) - 1; } return col; }
-        
+        let isSelecting = false;
+        let startRow = -1, startCol = -1, endRow = -1, endCol = -1;
+        let targetInputIdParaModal = "";
+
+        function numToCol(num) {
+            let col = '';
+            while (num >= 0) { col = String.fromCharCode((num % 26) + 65) + col; num = Math.floor(num / 26) - 1; }
+            return col;
+        }
+
         function abrirModal(wbRef, idHoja, idInputRango) {
             let workbook = null;
-            if (wbRef === 'wb1') workbook = wb1; else if (wbRef === 'wb2') workbook = wb2;
-            else if (wbRef.startsWith('armar-')) { const id = wbRef.split('-')[1]; workbook = stateArmar[id].workbook; }
+            if (wbRef === 'wb1') workbook = wb1;
+            else if (wbRef === 'wb2') workbook = wb2;
+            else if (wbRef.startsWith('armar-')) {
+                const id = wbRef.split('-')[1];
+                workbook = stateArmar[id].workbook;
+            }
+
             if (!workbook) return alert("Sube un archivo primero.");
-            const nombreHoja = document.getElementById(idHoja).value; if (!nombreHoja) return alert("Selecciona una hoja primero.");
+            const nombreHoja = document.getElementById(idHoja).value;
+            if (!nombreHoja) return alert("Selecciona una hoja primero.");
+
             targetInputIdParaModal = idInputRango;
+            
             const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], { header: 1, defval: "" });
-            renderizarGridModal(rawData); document.getElementById('modalSeleccion').style.display = 'flex';
+            renderizarGridModal(rawData);
+            document.getElementById('modalSeleccion').style.display = 'flex';
         }
 
         function cerrarModal() { document.getElementById('modalSeleccion').style.display = 'none'; }
-        
+
         function aplicarRangoModal() {
             if (startRow !== -1 && endRow !== -1) {
-                const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow); const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
+                const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow);
+                const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
                 const celdaInicio = numToCol(minC) + (minR + 1); const celdaFin = numToCol(maxC) + (maxR + 1);
-                const inputElement = document.getElementById(targetInputIdParaModal); inputElement.value = `${celdaInicio}:${celdaFin}`; inputElement.dispatchEvent(new Event('change'));
+                
+                const inputElement = document.getElementById(targetInputIdParaModal);
+                inputElement.value = `${celdaInicio}:${celdaFin}`;
+                inputElement.dispatchEvent(new Event('change'));
             }
             cerrarModal();
         }
 
         function renderizarGridModal(data) {
             const container = document.getElementById('modalGridContainer'); container.innerHTML = '';
-            const limitRows = Math.min(data.length, 100); let maxCols = 0; for(let i=0; i<limitRows; i++) { if(data[i].length > maxCols) maxCols = data[i].length; } if (maxCols === 0) maxCols = 10;
+            
+            const limitRows = data.length; // <-- MODIFICACIÓN: Mostrar todas las filas sin límite
+            let maxCols = 0;
+            for(let i=0; i<limitRows; i++) { if(data[i].length > maxCols) maxCols = data[i].length; }
+            if (maxCols === 0) maxCols = 10;
+
             const table = document.createElement('table'); table.className = 'grid-select';
-            const thead = document.createElement('thead'); const headTr = document.createElement('tr'); const thCorner = document.createElement('th'); thCorner.className = 'corner'; headTr.appendChild(thCorner);
-            for(let c = 0; c < maxCols; c++) { const th = document.createElement('th'); th.textContent = numToCol(c); headTr.appendChild(th); } thead.appendChild(headTr); table.appendChild(thead);
+            
+            const thead = document.createElement('thead'); const headTr = document.createElement('tr');
+            const thCorner = document.createElement('th'); thCorner.className = 'corner'; headTr.appendChild(thCorner);
+            
+            for(let c = 0; c < maxCols; c++) { const th = document.createElement('th'); th.textContent = numToCol(c); headTr.appendChild(th); }
+            thead.appendChild(headTr); table.appendChild(thead);
+
             const tbody = document.createElement('tbody');
             for (let r = 0; r < limitRows; r++) {
-                const tr = document.createElement('tr'); const thRow = document.createElement('th'); thRow.className = 'row-header'; thRow.textContent = r + 1; tr.appendChild(thRow);
+                const tr = document.createElement('tr');
+                const thRow = document.createElement('th'); thRow.className = 'row-header'; thRow.textContent = r + 1; tr.appendChild(thRow);
+
                 for (let c = 0; c < maxCols; c++) {
-                    const td = document.createElement('td'); td.textContent = data[r][c] !== undefined ? data[r][c] : ''; td.dataset.r = r; td.dataset.c = c;
-                    td.addEventListener('mousedown', () => iniciarSeleccion(r, c)); td.addEventListener('mouseenter', () => actualizarSeleccion(r, c)); td.addEventListener('mouseup', () => finalizarSeleccion(r, c)); tr.appendChild(td);
-                } tbody.appendChild(tr);
-            } table.appendChild(tbody); container.appendChild(table); table.addEventListener('dragstart', (e) => e.preventDefault());
+                    const td = document.createElement('td');
+                    td.textContent = data[r][c] !== undefined ? data[r][c] : '';
+                    td.dataset.r = r; td.dataset.c = c;
+                    td.addEventListener('mousedown', () => iniciarSeleccion(r, c));
+                    td.addEventListener('mouseenter', () => actualizarSeleccion(r, c));
+                    td.addEventListener('mouseup', () => finalizarSeleccion(r, c));
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+            table.appendChild(tbody); container.appendChild(table);
+            table.addEventListener('dragstart', (e) => e.preventDefault());
         }
 
         function iniciarSeleccion(r, c) { isSelecting = true; startRow = r; startCol = c; endRow = r; endCol = c; dibujarSeleccion(); }
         function actualizarSeleccion(r, c) { if (isSelecting) { endRow = r; endCol = c; dibujarSeleccion(); } }
-        function finalizarSeleccion(r, c) { if (isSelecting) { endRow = r; endCol = c; isSelecting = false; dibujarSeleccion(); const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow); const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol); document.getElementById('modalRangoActual').textContent = `Rango: ${numToCol(minC)}${minR + 1}:${numToCol(maxC)}${maxR + 1}`; } }
-        function dibujarSeleccion() { const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow); const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol); document.querySelectorAll('.grid-select td').forEach(td => { const r = parseInt(td.dataset.r); const c = parseInt(td.dataset.c); if (r >= minR && r <= maxR && c >= minC && c <= maxC) td.classList.add('selected'); else td.classList.remove('selected'); }); }
+        function finalizarSeleccion(r, c) { 
+            if (isSelecting) { 
+                endRow = r; endCol = c; isSelecting = false; dibujarSeleccion(); 
+                const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow);
+                const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
+                document.getElementById('modalRangoActual').textContent = `Rango: ${numToCol(minC)}${minR + 1}:${numToCol(maxC)}${maxR + 1}`;
+            } 
+        }
+        function dibujarSeleccion() {
+            const minR = Math.min(startRow, endRow); const maxR = Math.max(startRow, endRow);
+            const minC = Math.min(startCol, endCol); const maxC = Math.max(startCol, endCol);
+            document.querySelectorAll('.grid-select td').forEach(td => {
+                const r = parseInt(td.dataset.r); const c = parseInt(td.dataset.c);
+                if (r >= minR && r <= maxR && c >= minC && c <= maxC) td.classList.add('selected');
+                else td.classList.remove('selected');
+            });
+        }
 
         // ==========================================
         // LÓGICA: PESTAÑA 1 - VALIDADOR
@@ -274,7 +329,6 @@
                 reader.onload = function(event) {
                     const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
                     
-                    // <-- MODIFICACIÓN: Guardamos el nombre del archivo al cargarlo
                     if (wbVarName === 'wb1') { wb1 = workbook; fileName1 = file.name; } 
                     else { wb2 = workbook; fileName2 = file.name; }
                     
@@ -304,7 +358,7 @@
             const columnas = Object.keys(jsonExcel[0]);
             columnas.forEach(col => selectorCol.appendChild(new Option(col, col)));
 
-            const limite = Math.min(jsonExcel.length, 50);
+            const limite = jsonExcel.length; // <-- MODIFICACIÓN: Mostrar todas las filas en la vista previa
             document.getElementById(infoId).textContent = `Mostrando ${limite} filas.`;
 
             const trHead = document.createElement('tr');
@@ -343,7 +397,6 @@
             jsonPrincipal = jsonPrincipal.map(fila => {
                 const valorCelda = fila[col1] !== undefined ? String(fila[col1]).trim() : "";
                 
-                // <-- MODIFICACIÓN: Inyectamos Archivo Origen y Hoja Origen como las primeras columnas
                 let nuevaFila = { 
                     "Archivo Origen": fileName1, 
                     "Hoja Origen": nombreHoja1 
@@ -366,7 +419,6 @@
         function crearBloqueArmado() {
             idBloqueCounter++;
             const id = idBloqueCounter;
-            // <-- MODIFICACIÓN: Agregamos la propiedad fileName al estado
             stateArmar[id] = { workbook: null, selectedCols: [], fileName: "" };
 
             const html = `
@@ -415,7 +467,7 @@
             reader.onload = function(e) {
                 const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
                 stateArmar[id].workbook = workbook;
-                stateArmar[id].fileName = file.name; // <-- MODIFICACIÓN: Capturamos el nombre del archivo
+                stateArmar[id].fileName = file.name;
                 const selector = document.getElementById(`hojaArmar-${id}`); selector.innerHTML = '';
                 workbook.SheetNames.forEach(nombre => selector.appendChild(new Option(nombre, nombre)));
                 renderizarColumnasArmar(id);
@@ -491,7 +543,6 @@
                 const jsonData = XLSX.utils.sheet_to_json(st.workbook.Sheets[nombreHoja], opts);
 
                 jsonData.forEach(filaOriginal => {
-                    // <-- MODIFICACIÓN: Inyectamos Archivo Origen y Hoja Origen usando st.fileName
                     let nuevaFila = { 
                         "Archivo Origen": st.fileName, 
                         "Hoja Origen": nombreHoja 
