@@ -30,28 +30,10 @@
         }
         
         /* Estilos de Pestañas (Tabs) */
-        .tabs {
-            display: flex;
-            border-bottom: 2px solid var(--border);
-            margin-bottom: 20px;
-            gap: 10px;
-        }
-        .tab-btn {
-            padding: 12px 24px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 16px;
-            font-weight: 600;
-            color: #64748b;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
-        }
+        .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; gap: 10px; }
+        .tab-btn { padding: 12px 24px; cursor: pointer; border: none; background: none; font-size: 16px; font-weight: 600; color: #64748b; border-bottom: 3px solid transparent; transition: all 0.2s; }
         .tab-btn:hover { color: var(--primary); }
-        .tab-btn.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
         .tab-content { display: none; flex: 1; overflow: hidden; }
         .tab-content.active { display: flex; }
 
@@ -60,10 +42,11 @@
         h3 { font-size: 16px; margin-bottom: 10px; color: #475569; margin-top: 0; }
         .form-group { margin-bottom: 12px; }
         label { font-weight: 600; font-size: 13px; display: block; margin-bottom: 5px; color: #475569; }
-        input[type="file"], select { 
+        input[type="file"], input[type="text"], select { 
             width: 100%; padding: 8px; box-sizing: border-box; 
             border: 1px solid var(--border); border-radius: 5px; font-family: inherit; font-size: 13px;
         }
+        input[type="text"]::placeholder { color: #94a3b8; }
         button.btn-main { background-color: var(--primary); color: white; border: none; padding: 10px 15px; cursor: pointer; font-size: 14px; font-weight: bold; border-radius: 5px; }
         button.btn-main:hover { background-color: var(--primary-hover); }
         button.btn-success { background-color: var(--success); color: white; border: none; padding: 15px; cursor: pointer; font-size: 16px; font-weight: bold; border-radius: 5px; margin-top: auto; }
@@ -79,7 +62,7 @@
         .vista-contenedor { flex: 1; background: var(--panel-bg); padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         
         /* Tablas */
-        .table-container { overflow: auto; flex: 1; border: 1px solid var(--border); border-radius: 5px; margin-top: 10px; }
+        .table-container { overflow: auto; flex: 1; border: 1px solid var(--border); border-radius: 5px; margin-top: 10px; background: white; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; white-space: nowrap; }
         th { background-color: #f1f5f9; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 0 var(--border); }
@@ -90,18 +73,15 @@
         .armar-layout { display: flex; flex-direction: column; width: 100%; height: 100%; gap: 15px; }
         .armar-toolbar { display: flex; justify-content: space-between; background: var(--panel-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .bloques-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; }
-        
         .bloque-archivo { background: var(--panel-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-left: 5px solid var(--primary); display: flex; gap: 20px; }
         .bloque-config { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); padding-right: 20px; }
         .bloque-columnas { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        
         .columnas-box { border: 1px dashed var(--border); padding: 10px; border-radius: 6px; min-height: 60px; background: #fafafa; }
         .columnas-box h4 { margin: 0 0 10px 0; font-size: 13px; color: #64748b; }
         .col-pill { display: inline-block; padding: 6px 12px; margin: 0 5px 5px 0; background: white; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.2s; user-select: none; }
         .col-pill:hover { border-color: var(--primary); color: var(--primary); }
         .col-pill.selected { background: var(--primary); color: white; border-color: var(--primary); }
         .col-pill.selected:hover { background: #dc2626; border-color: #dc2626; content: "Quitar"; }
-        
         .btn-eliminar-bloque { background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; float: right; font-size: 12px; }
     </style>
 </head>
@@ -116,18 +96,29 @@
         <div class="validador-layout">
             <div class="panel-controles">
                 <h2>Configuración de Validación</h2>
+                
                 <div class="seccion-archivo seccion-principal">
                     <h3>📘 Archivo Principal (A Validar)</h3>
                     <div class="form-group"><input type="file" id="archivo1" accept=".xlsx, .xls"></div>
                     <div class="form-group"><label>Hoja:</label><select id="hoja1"><option value="">Sube un archivo...</option></select></div>
+                    <div class="form-group">
+                        <label>Rango (Ej: A5:Z100 o N° Fila):</label>
+                        <input type="text" id="rango1" placeholder="En blanco = Automático">
+                    </div>
                     <div class="form-group"><label>Columna a validar:</label><select id="col1"><option value="">Selecciona la hoja primero...</option></select></div>
                 </div>
+
                 <div class="seccion-archivo seccion-referencia">
                     <h3>📙 Archivo de Referencia (Base)</h3>
                     <div class="form-group"><input type="file" id="archivo2" accept=".xlsx, .xls"></div>
                     <div class="form-group"><label>Hoja:</label><select id="hoja2"><option value="">Sube un archivo...</option></select></div>
+                    <div class="form-group">
+                        <label>Rango (Ej: A5:Z100 o N° Fila):</label>
+                        <input type="text" id="rango2" placeholder="En blanco = Automático">
+                    </div>
                     <div class="form-group"><label>Columna con datos exactos:</label><select id="col2"><option value="">Selecciona la hoja primero...</option></select></div>
                 </div>
+
                 <button id="btnValidar" class="btn-success">Comparar y Descargar</button>
             </div>
             <div class="panel-vista">
@@ -149,15 +140,13 @@
                 <button id="btnNuevoBloque" class="btn-main">+ Añadir Archivo para Unificar</button>
                 <button id="btnGenerarArmado" class="btn-success" style="margin-top:0; padding:10px 20px;">Generar Excel Unificado</button>
             </div>
-            
-            <div id="contenedorBloques" class="bloques-container">
-                </div>
+            <div id="contenedorBloques" class="bloques-container"></div>
         </div>
     </div>
 
     <script>
         // ==========================================
-        // LÓGICA DE PESTAÑAS (TABS)
+        // FUNCIONES GLOBALES / UTILIDADES
         // ==========================================
         function cambiarTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -166,12 +155,28 @@
             event.currentTarget.classList.add('active');
         }
 
+        // Transforma el input del usuario en opciones para SheetJS
+        function getSheetJsOptions(rangoStr) {
+            const options = { defval: "" };
+            if (rangoStr && rangoStr.trim() !== "") {
+                const valor = rangoStr.trim();
+                if (!isNaN(valor)) {
+                    // Si es un número (ej. "5"), SheetJS usa índice base 0, por lo que restamos 1
+                    options.range = parseInt(valor) - 1;
+                } else {
+                    // Si es rango alfanumérico (ej. "A5:Z100")
+                    options.range = valor.toUpperCase();
+                }
+            }
+            return options;
+        }
+
         // ==========================================
         // LÓGICA: PESTAÑA 1 - VALIDADOR
         // ==========================================
         let wb1 = null; let wb2 = null;
 
-        function procesarArchivoValidador(fileInputId, wbVarName, hojaSelectId, colSelectId, headId, bodyId, infoId) {
+        function procesarArchivoValidador(fileInputId, wbVarName, hojaSelectId, colSelectId, headId, bodyId, infoId, rangoInputId) {
             document.getElementById(fileInputId).addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -179,28 +184,42 @@
                 reader.onload = function(event) {
                     const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
                     if (wbVarName === 'wb1') wb1 = workbook; else wb2 = workbook;
+                    
                     const selectorHoja = document.getElementById(hojaSelectId);
                     selectorHoja.innerHTML = ''; 
                     workbook.SheetNames.forEach(nombre => selectorHoja.appendChild(new Option(nombre, nombre)));
-                    actualizarHojaValidador(workbook, workbook.SheetNames[0], colSelectId, headId, bodyId, infoId);
+                    
+                    actualizarHojaValidador(workbook, workbook.SheetNames[0], colSelectId, headId, bodyId, infoId, rangoInputId);
                 };
                 reader.readAsArrayBuffer(file);
             });
         }
 
-        function actualizarHojaValidador(workbook, nombreHoja, colSelectId, headId, bodyId, infoId) {
-            const jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], { defval: "" });
+        function actualizarHojaValidador(workbook, nombreHoja, colSelectId, headId, bodyId, infoId, rangoInputId) {
+            if(!workbook || !nombreHoja) return;
+
+            const rangoVal = document.getElementById(rangoInputId).value;
+            const options = getSheetJsOptions(rangoVal);
+            
+            let jsonExcel = [];
+            try {
+                jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], options);
+            } catch (error) {
+                document.getElementById(infoId).textContent = "Error al leer el rango. Verifica el formato.";
+                return;
+            }
+
             const selectorCol = document.getElementById(colSelectId); selectorCol.innerHTML = '';
             const thead = document.getElementById(headId); const tbody = document.getElementById(bodyId);
             thead.innerHTML = ''; tbody.innerHTML = '';
 
-            if (jsonExcel.length === 0) { document.getElementById(infoId).textContent = "Hoja vacía."; return; }
+            if (jsonExcel.length === 0) { document.getElementById(infoId).textContent = "No se encontraron datos en ese rango."; return; }
 
             const columnas = Object.keys(jsonExcel[0]);
             columnas.forEach(col => selectorCol.appendChild(new Option(col, col)));
 
             const limite = Math.min(jsonExcel.length, 50);
-            document.getElementById(infoId).textContent = `Mostrando ${limite} filas.`;
+            document.getElementById(infoId).textContent = `Mostrando ${limite} filas leídas.`;
 
             const trHead = document.createElement('tr');
             columnas.forEach(col => { const th = document.createElement('th'); th.textContent = col; trHead.appendChild(th); });
@@ -213,20 +232,33 @@
             }
         }
 
-        procesarArchivoValidador('archivo1', 'wb1', 'hoja1', 'col1', 'head1', 'body1', 'info1');
-        document.getElementById('hoja1').addEventListener('change', e => actualizarHojaValidador(wb1, e.target.value, 'col1', 'head1', 'body1', 'info1'));
-        procesarArchivoValidador('archivo2', 'wb2', 'hoja2', 'col2', 'head2', 'body2', 'info2');
-        document.getElementById('hoja2').addEventListener('change', e => actualizarHojaValidador(wb2, e.target.value, 'col2', 'head2', 'body2', 'info2'));
+        // Configuración y Eventos - Validador
+        procesarArchivoValidador('archivo1', 'wb1', 'hoja1', 'col1', 'head1', 'body1', 'info1', 'rango1');
+        document.getElementById('hoja1').addEventListener('change', e => actualizarHojaValidador(wb1, e.target.value, 'col1', 'head1', 'body1', 'info1', 'rango1'));
+        document.getElementById('rango1').addEventListener('change', e => actualizarHojaValidador(wb1, document.getElementById('hoja1').value, 'col1', 'head1', 'body1', 'info1', 'rango1'));
 
+        procesarArchivoValidador('archivo2', 'wb2', 'hoja2', 'col2', 'head2', 'body2', 'info2', 'rango2');
+        document.getElementById('hoja2').addEventListener('change', e => actualizarHojaValidador(wb2, e.target.value, 'col2', 'head2', 'body2', 'info2', 'rango2'));
+        document.getElementById('rango2').addEventListener('change', e => actualizarHojaValidador(wb2, document.getElementById('hoja2').value, 'col2', 'head2', 'body2', 'info2', 'rango2'));
+
+        // Botón Comparar
         document.getElementById('btnValidar').addEventListener('click', function() {
             if (!wb1 || !wb2) return alert("Sube AMBOS archivos Excel.");
+            
             const nombreHoja1 = document.getElementById('hoja1').value; const col1 = document.getElementById('col1').value;
             const nombreHoja2 = document.getElementById('hoja2').value; const col2 = document.getElementById('col2').value;
+            const rangoVal1 = document.getElementById('rango1').value;
+            const rangoVal2 = document.getElementById('rango2').value;
 
-            const jsonReferencia = XLSX.utils.sheet_to_json(wb2.Sheets[nombreHoja2], { defval: "" });
-            const setReferencia = new Set(jsonReferencia.map(fila => String(fila[col2]).trim()).filter(dato => dato !== ""));
+            if(!col1 || !col2) return alert("Asegúrate de configurar los rangos y seleccionar las columnas válidas.");
 
-            let jsonPrincipal = XLSX.utils.sheet_to_json(wb1.Sheets[nombreHoja1], { defval: "" });
+            const optsRef = getSheetJsOptions(rangoVal2);
+            const jsonReferencia = XLSX.utils.sheet_to_json(wb2.Sheets[nombreHoja2], optsRef);
+            const setReferencia = new Set(jsonReferencia.map(fila => String(fila[col2]).trim()).filter(dato => dato !== "" && dato !== "undefined"));
+
+            const optsPrin = getSheetJsOptions(rangoVal1);
+            let jsonPrincipal = XLSX.utils.sheet_to_json(wb1.Sheets[nombreHoja1], optsPrin);
+            
             jsonPrincipal = jsonPrincipal.map(fila => {
                 const valorCelda = fila[col1] !== undefined ? String(fila[col1]).trim() : "";
                 fila['ESTADOS'] = setReferencia.has(valorCelda) ? 'DIGITALIZADO' : 'NO DIGITALIZADO';
@@ -242,7 +274,7 @@
         // LÓGICA: PESTAÑA 2 - ARMAR EXCEL
         // ==========================================
         let idBloqueCounter = 0;
-        const stateArmar = {}; // Almacena { idBloque: { workbook, selectedCols: [] } }
+        const stateArmar = {};
 
         document.getElementById('btnNuevoBloque').addEventListener('click', crearBloqueArmado);
 
@@ -258,6 +290,10 @@
                         <h3>Archivo ${id}</h3>
                         <div class="form-group"><input type="file" id="fileArmar-${id}" accept=".xlsx, .xls"></div>
                         <div class="form-group"><label>Seleccionar Hoja:</label><select id="hojaArmar-${id}"><option value="">Sube archivo...</option></select></div>
+                        <div class="form-group">
+                            <label>Rango de datos (Ej: A5:Z100 o N° fila):</label>
+                            <input type="text" id="rangoArmar-${id}" placeholder="En blanco = Automático">
+                        </div>
                     </div>
                     <div class="bloque-columnas">
                         <div class="columnas-box">
@@ -273,9 +309,9 @@
             `;
             document.getElementById('contenedorBloques').insertAdjacentHTML('beforeend', html);
 
-            // Eventos del nuevo bloque
             document.getElementById(`fileArmar-${id}`).addEventListener('change', (e) => cargarArchivoArmar(e, id));
-            document.getElementById(`hojaArmar-${id}`).addEventListener('change', (e) => renderizarColumnasArmar(id, e.target.value));
+            document.getElementById(`hojaArmar-${id}`).addEventListener('change', (e) => renderizarColumnasArmar(id));
+            document.getElementById(`rangoArmar-${id}`).addEventListener('change', (e) => renderizarColumnasArmar(id));
         }
 
         function eliminarBloque(id) {
@@ -293,24 +329,35 @@
                 const selector = document.getElementById(`hojaArmar-${id}`);
                 selector.innerHTML = '';
                 workbook.SheetNames.forEach(nombre => selector.appendChild(new Option(nombre, nombre)));
-                renderizarColumnasArmar(id, workbook.SheetNames[0]);
+                renderizarColumnasArmar(id);
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function renderizarColumnasArmar(id, nombreHoja) {
+        function renderizarColumnasArmar(id) {
             const workbook = stateArmar[id].workbook;
-            const jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], { defval: "" });
-            stateArmar[id].selectedCols = []; // Resetear selecciones
-            
+            if(!workbook) return;
+
+            const nombreHoja = document.getElementById(`hojaArmar-${id}`).value;
+            const rangoVal = document.getElementById(`rangoArmar-${id}`).value;
+            const options = getSheetJsOptions(rangoVal);
+
+            let jsonExcel = [];
+            try {
+                jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], options);
+            } catch(e) {
+                document.getElementById(`disponibles-${id}`).innerHTML = '<i style="color:red">Rango inválido</i>';
+                return;
+            }
+
+            stateArmar[id].selectedCols = []; 
             const divDisp = document.getElementById(`disponibles-${id}`);
             const divSel = document.getElementById(`seleccionadas-${id}`);
-            divDisp.innerHTML = ''; divSel.innerHTML = '';
+            divDisp.innerHTML = ''; divSel.innerHTML = '<i>Aún no has seleccionado columnas</i>';
 
-            if (jsonExcel.length === 0) { divDisp.innerHTML = '<i>Hoja vacía</i>'; return; }
+            if (jsonExcel.length === 0) { divDisp.innerHTML = '<i>No hay datos en ese rango</i>'; return; }
 
             const columnas = Object.keys(jsonExcel[0]);
-            
             columnas.forEach(col => {
                 const pill = document.createElement('div');
                 pill.className = 'col-pill';
@@ -326,14 +373,12 @@
             const isSelected = pillElement.classList.contains('selected');
 
             if (isSelected) {
-                // Quitar de selección
                 pillElement.classList.remove('selected');
-                divDisp.appendChild(pillElement); // Regresa a disponibles
+                divDisp.appendChild(pillElement); 
                 stateArmar[id].selectedCols = stateArmar[id].selectedCols.filter(c => c !== colName);
             } else {
-                // Agregar a selección
                 pillElement.classList.add('selected');
-                divSel.appendChild(pillElement); // Mueve a seleccionados
+                divSel.appendChild(pillElement); 
                 stateArmar[id].selectedCols.push(colName);
             }
             
@@ -344,7 +389,7 @@
             }
         }
 
-        // --- Lógica de Unificación (Merge) ---
+        // Unificar (Merge)
         document.getElementById('btnGenerarArmado').addEventListener('click', function() {
             const keysIds = Object.keys(stateArmar);
             if (keysIds.length === 0) return alert("Añade al menos un archivo.");
@@ -353,7 +398,6 @@
             let masterHeaders = [];
             let columnasCount = 0;
 
-            // Encontrar la plantilla maestra (El primer bloque con columnas seleccionadas)
             for (let id of keysIds) {
                 if (stateArmar[id].selectedCols.length > 0) {
                     masterHeaders = stateArmar[id].selectedCols;
@@ -364,27 +408,25 @@
 
             if (columnasCount === 0) return alert("Selecciona al menos una columna en algún archivo.");
 
-            // Procesar cada bloque
             for (let id of keysIds) {
                 const st = stateArmar[id];
                 const colsLocales = st.selectedCols;
                 
-                if (colsLocales.length === 0) continue; // Ignorar si no seleccionó nada
+                if (colsLocales.length === 0) continue; 
                 if (colsLocales.length !== columnasCount) {
-                    return alert(`Error: El Archivo ${id} tiene ${colsLocales.length} columnas seleccionadas, pero la plantilla maestra usa ${columnasCount}. Selecciona la misma cantidad de columnas por archivo para poder apilarlas correctamente.`);
+                    return alert(`Error: El Archivo ${id} tiene ${colsLocales.length} columnas seleccionadas, pero la plantilla maestra usa ${columnasCount}.`);
                 }
 
                 const nombreHoja = document.getElementById(`hojaArmar-${id}`).value;
-                const jsonData = XLSX.utils.sheet_to_json(st.workbook.Sheets[nombreHoja], { defval: "" });
+                const rangoVal = document.getElementById(`rangoArmar-${id}`).value;
+                const options = getSheetJsOptions(rangoVal);
+                
+                const jsonData = XLSX.utils.sheet_to_json(st.workbook.Sheets[nombreHoja], options);
 
-                // Mapear los datos de este archivo usando las cabeceras maestras
                 jsonData.forEach(filaOriginal => {
                     let nuevaFila = {};
-                    // Recorremos el índice de columnas (0, 1, 2...)
                     for (let i = 0; i < columnasCount; i++) {
-                        const nombreColMaestra = masterHeaders[i];
-                        const nombreColLocal = colsLocales[i];
-                        nuevaFila[nombreColMaestra] = filaOriginal[nombreColLocal] !== undefined ? filaOriginal[nombreColLocal] : "";
+                        nuevaFila[masterHeaders[i]] = filaOriginal[colsLocales[i]] !== undefined ? filaOriginal[colsLocales[i]] : "";
                     }
                     unificados.push(nuevaFila);
                 });
@@ -392,14 +434,12 @@
 
             if (unificados.length === 0) return alert("No se encontraron datos para unificar.");
 
-            // Generar y descargar
             const nuevaHoja = XLSX.utils.json_to_sheet(unificados);
             const nuevoWorkbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(nuevoWorkbook, nuevaHoja, "Data_Unificada");
             XLSX.writeFile(nuevoWorkbook, "Excel_Unificado.xlsx");
         });
 
-        // Crear un bloque vacío por defecto al cargar
         crearBloqueArmado();
     </script>
 </body>
