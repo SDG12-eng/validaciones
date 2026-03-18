@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>validador</title>
+    <title>Sistemas de Datos Excel - GSCI Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
@@ -17,6 +17,7 @@
             --text: #334155;
             --ref-color: #f59e0b;
             --count-color: #8b5cf6;
+            --vlookup-color: #0891b2; /* Color para la nueva pestaña */
             --select-color: rgba(37, 99, 235, 0.2);
             --select-border: #2563eb;
         }
@@ -60,6 +61,7 @@
         .seccion-principal { border-left: 4px solid var(--primary); }
         .seccion-referencia { border-left: 4px solid var(--ref-color); }
         .seccion-conteo { border-left: 4px solid var(--count-color); }
+        .seccion-cruce { border-left: 4px solid var(--vlookup-color); }
         .panel-vista { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow: hidden; }
         .vista-contenedor { flex: 1; background: var(--panel-bg); padding: 15px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; }
         
@@ -110,8 +112,9 @@
 
     <div class="tabs">
         <button class="tab-btn active" onclick="cambiarTab('tab-validador')">1. Validador de Datos</button>
-        <button class="tab-btn" onclick="cambiarTab('tab-armar')">2. Unificar / Armar Excel</button>
-        <button class="tab-btn" onclick="cambiarTab('tab-contar')">3. Comparar Inventario (Contar)</button>
+        <button class="tab-btn" onclick="cambiarTab('tab-armar')">2. Unificar Excel</button>
+        <button class="tab-btn" onclick="cambiarTab('tab-contar')">3. Comparar (Contar)</button>
+        <button class="tab-btn" onclick="cambiarTab('tab-buscarv')">4. Cruce de Datos (BuscarV)</button>
     </div>
 
     <div id="tab-validador" class="tab-content active">
@@ -163,7 +166,7 @@
                 <h2>Cruce y Conteo de Inventario</h2>
                 <div class="seccion-archivo seccion-principal">
                     <h3>📘 1. Inventario Base (Maestro)</h3>
-                    <p class="info-text" style="margin-bottom:8px;">A este archivo se le agregará la columna con las cantidades contadas.</p>
+                    <p class="info-text" style="margin-bottom:8px;">A este archivo se le agregará la columna con las cantidades.</p>
                     <div class="form-group"><input type="file" id="archivo3" accept=".xlsx, .xls"></div>
                     <div class="form-group"><label>Hoja:</label><select id="hoja3"><option value="">Sube archivo...</option></select></div>
                     <div class="form-group"><label>Rango:</label><div class="rango-input-group"><input type="text" id="rango3" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('wb3', 'hoja3', 'rango3')">🖱️</button></div></div>
@@ -171,11 +174,11 @@
                 </div>
                 <div class="seccion-archivo seccion-conteo">
                     <h3>🧮 2. Archivo a Contar (Registros)</h3>
-                    <p class="info-text" style="margin-bottom:8px;">Donde el insumo se repite varias veces (ej. movimientos, salidas).</p>
+                    <p class="info-text" style="margin-bottom:8px;">Donde el insumo se repite varias veces.</p>
                     <div class="form-group"><input type="file" id="archivo4" accept=".xlsx, .xls"></div>
                     <div class="form-group"><label>Hoja:</label><select id="hoja4"><option value="">Sube archivo...</option></select></div>
                     <div class="form-group"><label>Rango:</label><div class="rango-input-group"><input type="text" id="rango4" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('wb4', 'hoja4', 'rango4')">🖱️</button></div></div>
-                    <div class="form-group"><label>Columna del Insumo/Producto a contar:</label><select id="col4"><option value="">Selecciona hoja...</option></select></div>
+                    <div class="form-group"><label>Columna a contar:</label><select id="col4"><option value="">Selecciona hoja...</option></select></div>
                 </div>
                 <button id="btnContar" class="btn-success" style="background-color: var(--count-color);">Contar y Descargar</button>
             </div>
@@ -187,6 +190,49 @@
                 <div class="vista-contenedor" style="border-left: 4px solid var(--count-color);">
                     <h3>Vista Previa: Registros a Contar</h3><p class="info-text" id="info4">Esperando archivo...</p>
                     <div class="table-container"><table id="tabla4"><thead id="head4"></thead><tbody id="body4"></tbody></table></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-buscarv" class="tab-content">
+        <div class="validador-layout">
+            <div class="panel-controles">
+                <h2>Cruzar y Extraer Datos (BuscarV)</h2>
+                
+                <div class="seccion-archivo seccion-principal">
+                    <h3>📘 1. Archivo Destino (Principal)</h3>
+                    <p class="info-text" style="margin-bottom:8px;">El archivo al que se le añadirá el nuevo dato.</p>
+                    <div class="form-group"><input type="file" id="archivo5" accept=".xlsx, .xls"></div>
+                    <div class="form-group"><label>Hoja:</label><select id="hoja5"><option value="">Sube archivo...</option></select></div>
+                    <div class="form-group"><label>Rango:</label><div class="rango-input-group"><input type="text" id="rango5" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('wb5', 'hoja5', 'rango5')">🖱️</button></div></div>
+                    <div class="form-group"><label>Columna a buscar (Llave):</label><select id="col5"><option value="">Selecciona hoja...</option></select></div>
+                </div>
+                
+                <div class="seccion-archivo seccion-cruce">
+                    <h3>🔍 2. Archivo Origen (Base de Datos)</h3>
+                    <p class="info-text" style="margin-bottom:8px;">El archivo de donde vas a extraer el valor.</p>
+                    <div class="form-group"><input type="file" id="archivo6" accept=".xlsx, .xls"></div>
+                    <div class="form-group"><label>Hoja:</label><select id="hoja6"><option value="">Sube archivo...</option></select></div>
+                    <div class="form-group"><label>Rango:</label><div class="rango-input-group"><input type="text" id="rango6" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('wb6', 'hoja6', 'rango6')">🖱️</button></div></div>
+                    
+                    <div class="form-group"><label>Columna Coincidente (Llave):</label><select id="col6_llave"><option value="">Selecciona hoja...</option></select></div>
+                    <div class="form-group" style="background:#e0f2fe; padding:8px; border-radius:5px; border:1px solid #7dd3fc;">
+                        <label style="color:#0369a1;">⭐ Columna con el valor a extraer:</label>
+                        <select id="col6_valor"><option value="">Selecciona hoja...</option></select>
+                    </div>
+                </div>
+                <button id="btnBuscarV" class="btn-success" style="background-color: var(--vlookup-color);">Cruzar y Descargar</button>
+            </div>
+            
+            <div class="panel-vista">
+                <div class="vista-contenedor">
+                    <h3>Vista Previa: Destino Principal</h3><p class="info-text" id="info5">Esperando archivo...</p>
+                    <div class="table-container"><table id="tabla5"><thead id="head5"></thead><tbody id="body5"></tbody></table></div>
+                </div>
+                <div class="vista-contenedor" style="border-left: 4px solid var(--vlookup-color);">
+                    <h3>Vista Previa: Origen de Extracción</h3><p class="info-text" id="info6">Esperando archivo...</p>
+                    <div class="table-container"><table id="tabla6"><thead id="head6"></thead><tbody id="body6"></tbody></table></div>
                 </div>
             </div>
         </div>
@@ -210,8 +256,8 @@
         // ==========================================
         // VARIABLES GLOBALES
         // ==========================================
-        let wb1 = null, wb2 = null, wb3 = null, wb4 = null;
-        let fileName1 = "", fileName2 = "", fileName3 = "", fileName4 = ""; 
+        let wb1 = null, wb2 = null, wb3 = null, wb4 = null, wb5 = null, wb6 = null;
+        let fileName1 = "", fileName2 = "", fileName3 = "", fileName4 = "", fileName5 = "", fileName6 = ""; 
         let idBloqueCounter = 0;
         const stateArmar = {};
 
@@ -242,6 +288,7 @@
             let workbook = null;
             if (wbRef === 'wb1') workbook = wb1; else if (wbRef === 'wb2') workbook = wb2;
             else if (wbRef === 'wb3') workbook = wb3; else if (wbRef === 'wb4') workbook = wb4;
+            else if (wbRef === 'wb5') workbook = wb5; else if (wbRef === 'wb6') workbook = wb6;
             else if (wbRef.startsWith('armar-')) { const id = wbRef.split('-')[1]; workbook = stateArmar[id].workbook; }
 
             if (!workbook) return alert("Sube un archivo primero.");
@@ -312,6 +359,8 @@
                     else if (wbVarName === 'wb2') { wb2 = workbook; fileName2 = file.name; }
                     else if (wbVarName === 'wb3') { wb3 = workbook; fileName3 = file.name; }
                     else if (wbVarName === 'wb4') { wb4 = workbook; fileName4 = file.name; }
+                    else if (wbVarName === 'wb5') { wb5 = workbook; fileName5 = file.name; }
+                    else if (wbVarName === 'wb6') { wb6 = workbook; fileName6 = file.name; }
                     
                     const selectorHoja = document.getElementById(hojaSelectId); selectorHoja.innerHTML = ''; 
                     workbook.SheetNames.forEach(nombre => selectorHoja.appendChild(new Option(nombre, nombre)));
@@ -321,6 +370,7 @@
             });
         }
 
+        // SOPORTA MÚLTIPLES SELECTS A LA VEZ (como colSelectId siendo Array)
         function actualizarHojaVista(workbook, nombreHoja, colSelectId, headId, bodyId, infoId, rangoInputId) {
             if(!workbook || !nombreHoja) return;
             const rangoVal = document.getElementById(rangoInputId).value;
@@ -329,14 +379,22 @@
             try { jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], options); } 
             catch (error) { document.getElementById(infoId).textContent = "Error al leer. Verifica el rango."; return; }
 
-            const selectorCol = document.getElementById(colSelectId); selectorCol.innerHTML = '';
+            // Llenar los selects
+            const selectsTargets = Array.isArray(colSelectId) ? colSelectId : [colSelectId];
+            const columnas = jsonExcel.length > 0 ? Object.keys(jsonExcel[0]) : [];
+            
+            selectsTargets.forEach(idSelect => {
+                const sel = document.getElementById(idSelect);
+                if(sel) {
+                    sel.innerHTML = '';
+                    columnas.forEach(col => sel.appendChild(new Option(col, col)));
+                }
+            });
+
             const thead = document.getElementById(headId); const tbody = document.getElementById(bodyId);
             thead.innerHTML = ''; tbody.innerHTML = '';
 
             if (jsonExcel.length === 0) { document.getElementById(infoId).textContent = "Sin datos en ese rango."; return; }
-
-            const columnas = Object.keys(jsonExcel[0]);
-            columnas.forEach(col => selectorCol.appendChild(new Option(col, col)));
 
             const limite = jsonExcel.length; 
             document.getElementById(infoId).textContent = `Mostrando ${limite} filas.`;
@@ -353,7 +411,7 @@
         }
 
         // ==========================================
-        // PESTAÑA 1: EVENTOS Y LÓGICA
+        // PESTAÑA 1: VALIDAR DATOS EXACTOS
         // ==========================================
         procesarArchivoGeneral('archivo1', 'wb1', 'hoja1', 'col1', 'head1', 'body1', 'info1', 'rango1');
         document.getElementById('hoja1').addEventListener('change', e => actualizarHojaVista(wb1, e.target.value, 'col1', 'head1', 'body1', 'info1', 'rango1'));
@@ -382,11 +440,8 @@
                 
                 let nuevaFila = { "Archivo Origen": fileName1, "Hoja Origen": nombreHoja1 };
                 Object.assign(nuevaFila, fila); 
-                
-                // NUEVO: Agregamos el Estado y el Dato Usado para validación
                 nuevaFila['ESTADOS'] = esValido ? 'DIGITALIZADO' : 'NO DIGITALIZADO'; 
                 nuevaFila['Dato Validado'] = valorCelda; 
-
                 return nuevaFila;
             });
 
@@ -396,7 +451,7 @@
         });
 
         // ==========================================
-        // PESTAÑA 3: CONTAR INVENTARIO - EVENTOS Y LÓGICA
+        // PESTAÑA 3: CONTAR INVENTARIO 
         // ==========================================
         procesarArchivoGeneral('archivo3', 'wb3', 'hoja3', 'col3', 'head3', 'body3', 'info3', 'rango3');
         document.getElementById('hoja3').addEventListener('change', e => actualizarHojaVista(wb3, e.target.value, 'col3', 'head3', 'body3', 'info3', 'rango3'));
@@ -408,37 +463,25 @@
 
         document.getElementById('btnContar').addEventListener('click', function() {
             if (!wb3 || !wb4) return alert("Sube AMBOS archivos Excel.");
-            
             const nombreHoja3 = document.getElementById('hoja3').value; const col3 = document.getElementById('col3').value;
             const nombreHoja4 = document.getElementById('hoja4').value; const col4 = document.getElementById('col4').value;
             const rangoVal3 = document.getElementById('rango3').value; const rangoVal4 = document.getElementById('rango4').value;
 
-            // PASO 1: Leer el archivo de registros y CONTAR las frecuencias
             const optsContar = getSheetJsOptions(rangoVal4);
             const jsonContar = XLSX.utils.sheet_to_json(wb4.Sheets[nombreHoja4], optsContar);
-            
             const mapaConteo = {};
             jsonContar.forEach(fila => {
                 const valorItem = fila[col4] !== undefined ? String(fila[col4]).trim() : "";
-                if (valorItem) {
-                    mapaConteo[valorItem] = (mapaConteo[valorItem] || 0) + 1;
-                }
+                if (valorItem) mapaConteo[valorItem] = (mapaConteo[valorItem] || 0) + 1;
             });
 
-            // PASO 2: Mapear el archivo Maestro y asignar la cantidad contada
             const optsBase = getSheetJsOptions(rangoVal3);
             let jsonBase = XLSX.utils.sheet_to_json(wb3.Sheets[nombreHoja3], optsBase);
-            
             jsonBase = jsonBase.map(fila => {
                 const valorCelda = fila[col3] !== undefined ? String(fila[col3]).trim() : "";
-                const cantidadContada = mapaConteo[valorCelda] || 0; // Si no existe, es 0
-                
                 let nuevaFila = { "Archivo Origen": fileName3, "Hoja Origen": nombreHoja3 };
                 Object.assign(nuevaFila, fila); 
-                
-                // Agregamos la nueva columna
-                nuevaFila['Cantidad Encontrada'] = cantidadContada;
-                
+                nuevaFila['Cantidad Encontrada'] = mapaConteo[valorCelda] || 0;
                 return nuevaFila;
             });
 
@@ -448,38 +491,73 @@
         });
 
         // ==========================================
-        // PESTAÑA 2: ARMAR EXCEL (MANTENIDO INTACTO)
+        // PESTAÑA 4: CRUCE DE DATOS (BUSCARV)
+        // ==========================================
+        procesarArchivoGeneral('archivo5', 'wb5', 'hoja5', 'col5', 'head5', 'body5', 'info5', 'rango5');
+        document.getElementById('hoja5').addEventListener('change', e => actualizarHojaVista(wb5, e.target.value, 'col5', 'head5', 'body5', 'info5', 'rango5'));
+        document.getElementById('rango5').addEventListener('change', e => actualizarHojaVista(wb5, document.getElementById('hoja5').value, 'col5', 'head5', 'body5', 'info5', 'rango5'));
+
+        // El archivo 6 tiene 2 selects (llave y valor a extraer)
+        procesarArchivoGeneral('archivo6', 'wb6', 'hoja6', ['col6_llave', 'col6_valor'], 'head6', 'body6', 'info6', 'rango6');
+        document.getElementById('hoja6').addEventListener('change', e => actualizarHojaVista(wb6, e.target.value, ['col6_llave', 'col6_valor'], 'head6', 'body6', 'info6', 'rango6'));
+        document.getElementById('rango6').addEventListener('change', e => actualizarHojaVista(wb6, document.getElementById('hoja6').value, ['col6_llave', 'col6_valor'], 'head6', 'body6', 'info6', 'rango6'));
+
+        document.getElementById('btnBuscarV').addEventListener('click', function() {
+            if (!wb5 || !wb6) return alert("Sube AMBOS archivos Excel.");
+            const nombreHoja5 = document.getElementById('hoja5').value; const col5 = document.getElementById('col5').value;
+            const nombreHoja6 = document.getElementById('hoja6').value; const col6_llave = document.getElementById('col6_llave').value;
+            const col6_valor = document.getElementById('col6_valor').value;
+            const rangoVal5 = document.getElementById('rango5').value; const rangoVal6 = document.getElementById('rango6').value;
+
+            if(!col5 || !col6_llave || !col6_valor) return alert("Asegúrate de haber seleccionado todas las columnas.");
+
+            // PASO 1: Crear el diccionario desde el archivo Origen (Archivo 6)
+            const optsOrigen = getSheetJsOptions(rangoVal6);
+            const jsonOrigen = XLSX.utils.sheet_to_json(wb6.Sheets[nombreHoja6], optsOrigen);
+            const mapaExtraccion = {};
+            jsonOrigen.forEach(fila => {
+                const llaveStr = fila[col6_llave] !== undefined ? String(fila[col6_llave]).trim() : "";
+                if (llaveStr && !mapaExtraccion.hasOwnProperty(llaveStr)) {
+                    mapaExtraccion[llaveStr] = fila[col6_valor];
+                }
+            });
+
+            // PASO 2: Cruzarlo con el archivo Destino (Archivo 5)
+            const optsDestino = getSheetJsOptions(rangoVal5);
+            let jsonDestino = XLSX.utils.sheet_to_json(wb5.Sheets[nombreHoja5], optsDestino);
+            
+            jsonDestino = jsonDestino.map(fila => {
+                const llaveStr = fila[col5] !== undefined ? String(fila[col5]).trim() : "";
+                
+                let nuevaFila = { "Archivo Origen": fileName5, "Hoja Origen": nombreHoja5 };
+                Object.assign(nuevaFila, fila); 
+                
+                // Extraemos el valor, si no existe devolvemos un string vacío
+                const valorExtraido = mapaExtraccion[llaveStr] !== undefined ? mapaExtraccion[llaveStr] : "";
+                nuevaFila[col6_valor + ' (Encontrado)'] = valorExtraido;
+                
+                return nuevaFila;
+            });
+
+            const nuevoWorkbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(nuevoWorkbook, XLSX.utils.json_to_sheet(jsonDestino), "Cruce_Datos");
+            XLSX.writeFile(nuevoWorkbook, "Excel_Datos_Extraidos.xlsx");
+        });
+
+        // ==========================================
+        // PESTAÑA 2: ARMAR EXCEL
         // ==========================================
         document.getElementById('btnNuevoBloque').addEventListener('click', crearBloqueArmado);
-
         function crearBloqueArmado() {
             idBloqueCounter++; const id = idBloqueCounter;
             stateArmar[id] = { workbook: null, selectedCols: [], fileName: "" };
-            const html = `
-                <div class="bloque-archivo" id="bloque-${id}">
-                    <div class="bloque-config">
-                        <button class="btn-eliminar-bloque" onclick="eliminarBloque(${id})">X</button>
-                        <h3>Archivo ${id}</h3>
-                        <div class="form-group"><input type="file" id="fileArmar-${id}" accept=".xlsx, .xls"></div>
-                        <div class="form-group"><label>Hoja:</label><select id="hojaArmar-${id}"><option value="">Sube archivo...</option></select></div>
-                        <div class="form-group"><label>Rango de datos:</label><div class="rango-input-group"><input type="text" id="rangoArmar-${id}" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('armar-${id}', 'hojaArmar-${id}', 'rangoArmar-${id}')">🖱️</button></div></div>
-                    </div>
-                    <div class="bloque-columnas">
-                        <div class="columnas-box"><h4>1. Disponibles</h4><div id="disponibles-${id}"><i>Sube archivo para ver columnas</i></div></div>
-                        <div class="columnas-box" style="background:#f0fdf4; border-color:#86efac;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><h4 style="margin:0;">2. Seleccionadas (Orden)</h4><button type="button" onclick="agregarColumnaVacia(${id})" style="background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px; padding:4px 8px;">+ Añadir Espacio Vacío</button></div>
-                            <div id="seleccionadas-${id}"><i>Aún no seleccionadas</i></div>
-                        </div>
-                    </div>
-                </div>`;
+            const html = `<div class="bloque-archivo" id="bloque-${id}"><div class="bloque-config"><button class="btn-eliminar-bloque" onclick="eliminarBloque(${id})">X</button><h3>Archivo ${id}</h3><div class="form-group"><input type="file" id="fileArmar-${id}" accept=".xlsx, .xls"></div><div class="form-group"><label>Hoja:</label><select id="hojaArmar-${id}"><option value="">Sube archivo...</option></select></div><div class="form-group"><label>Rango de datos:</label><div class="rango-input-group"><input type="text" id="rangoArmar-${id}" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('armar-${id}', 'hojaArmar-${id}', 'rangoArmar-${id}')">🖱️</button></div></div></div><div class="bloque-columnas"><div class="columnas-box"><h4>1. Disponibles</h4><div id="disponibles-${id}"><i>Sube archivo para ver columnas</i></div></div><div class="columnas-box" style="background:#f0fdf4; border-color:#86efac;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><h4 style="margin:0;">2. Seleccionadas (Orden)</h4><button type="button" onclick="agregarColumnaVacia(${id})" style="background:#10b981; color:white; border:none; border-radius:4px; cursor:pointer; font-size:11px; padding:4px 8px;">+ Añadir Espacio Vacío</button></div><div id="seleccionadas-${id}"><i>Aún no seleccionadas</i></div></div></div></div>`;
             document.getElementById('contenedorBloques').insertAdjacentHTML('beforeend', html);
             document.getElementById(`fileArmar-${id}`).addEventListener('change', (e) => cargarArchivoArmar(e, id));
             document.getElementById(`hojaArmar-${id}`).addEventListener('change', () => renderizarColumnasArmar(id));
             document.getElementById(`rangoArmar-${id}`).addEventListener('change', () => renderizarColumnasArmar(id));
         }
-
         function eliminarBloque(id) { document.getElementById(`bloque-${id}`).remove(); delete stateArmar[id]; }
-
         function cargarArchivoArmar(event, id) {
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
@@ -491,20 +569,17 @@
                 renderizarColumnasArmar(id);
             }; reader.readAsArrayBuffer(file);
         }
-
         function renderizarColumnasArmar(id) {
             const workbook = stateArmar[id].workbook; if(!workbook) return;
             const nombreHoja = document.getElementById(`hojaArmar-${id}`).value; const rangoVal = document.getElementById(`rangoArmar-${id}`).value;
             const options = getSheetJsOptions(rangoVal); let jsonExcel = [];
             try { jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], options); } catch(e) { document.getElementById(`disponibles-${id}`).innerHTML = '<i style="color:red">Rango inválido</i>'; return; }
-            stateArmar[id].selectedCols = []; 
-            const divDisp = document.getElementById(`disponibles-${id}`); const divSel = document.getElementById(`seleccionadas-${id}`);
+            stateArmar[id].selectedCols = []; const divDisp = document.getElementById(`disponibles-${id}`); const divSel = document.getElementById(`seleccionadas-${id}`);
             divDisp.innerHTML = ''; divSel.innerHTML = '<i>Aún no seleccionadas</i>';
             if (jsonExcel.length === 0) { divDisp.innerHTML = '<i>No hay datos</i>'; return; }
             const columnas = Object.keys(jsonExcel[0]);
             columnas.forEach(col => { const pill = document.createElement('div'); pill.className = 'col-pill'; pill.textContent = col; pill.onclick = () => toggleColumna(id, col, pill); divDisp.appendChild(pill); });
         }
-
         function toggleColumna(id, colName, pillElement) {
             const divDisp = document.getElementById(`disponibles-${id}`); const divSel = document.getElementById(`seleccionadas-${id}`);
             const isSelected = pillElement.classList.contains('selected');
@@ -512,19 +587,17 @@
             else { pillElement.classList.add('selected'); divSel.appendChild(pillElement); stateArmar[id].selectedCols.push(colName); }
             if (stateArmar[id].selectedCols.length === 0) divSel.innerHTML = '<i>Aún no seleccionadas</i>'; else if (divSel.querySelector('i')) divSel.querySelector('i').remove();
         }
-
         function agregarColumnaVacia(id) {
             const divSel = document.getElementById(`seleccionadas-${id}`); if (divSel.querySelector('i')) divSel.querySelector('i').remove();
             const uniqueId = '__EMPTY__' + Date.now() + Math.floor(Math.random() * 1000); stateArmar[id].selectedCols.push(uniqueId);
             const pill = document.createElement('div'); pill.className = 'col-pill selected empty-pill'; pill.textContent = '[ Espacio Vacío ]';
             pill.onclick = () => { pill.remove(); stateArmar[id].selectedCols = stateArmar[id].selectedCols.filter(c => c !== uniqueId); if (stateArmar[id].selectedCols.length === 0) divSel.innerHTML = '<i>Aún no seleccionadas</i>'; }; divSel.appendChild(pill);
         }
-
         document.getElementById('btnGenerarArmado').addEventListener('click', function() {
             const keysIds = Object.keys(stateArmar); if (keysIds.length === 0) return alert("Añade al menos un archivo.");
             let unificados = []; let masterHeadersRaw = []; let columnasCount = 0;
             for (let id of keysIds) { if (stateArmar[id].selectedCols.length > 0) { masterHeadersRaw = stateArmar[id].selectedCols; columnasCount = masterHeadersRaw.length; break; } }
-            if (columnasCount === 0) return alert("Selecciona al menos una columna en el archivo principal.");
+            if (columnasCount === 0) return alert("Selecciona al menos una columna.");
             let masterHeaders = masterHeadersRaw.map((h, index) => h.startsWith('__EMPTY__') ? `Columna_Vacía_${index + 1}` : h);
             for (let id of keysIds) {
                 const st = stateArmar[id]; const colsLocales = st.selectedCols; if (colsLocales.length === 0) continue; 
