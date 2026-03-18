@@ -17,7 +17,7 @@
             --text: #334155;
             --ref-color: #f59e0b;
             --count-color: #8b5cf6;
-            --vlookup-color: #0891b2; /* Color para la nueva pestaña */
+            --vlookup-color: #0891b2;
             --select-color: rgba(37, 99, 235, 0.2);
             --select-border: #2563eb;
         }
@@ -106,6 +106,10 @@
         table.grid-select th.corner { z-index: 12; }
         table.grid-select td { border: 1px solid #cbd5e1; min-width: 60px; height: 20px; padding: 4px 8px; cursor: crosshair; font-size: 11px; color: #334155; }
         table.grid-select td.selected { background-color: var(--select-color) !important; border: 1px solid var(--select-border); }
+
+        /* Casilla de Estructura Original */
+        .check-estructura { background: #f8fafc; border: 1px solid var(--border); padding: 10px; border-radius: 6px; margin-bottom: 15px; }
+        .check-estructura label { margin: 0; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: #0f172a; }
     </style>
 </head>
 <body>
@@ -135,6 +139,14 @@
                     <div class="form-group"><label>Rango:</label><div class="rango-input-group"><input type="text" id="rango2" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('wb2', 'hoja2', 'rango2')">🖱️</button></div></div>
                     <div class="form-group"><label>Columna con datos exactos:</label><select id="col2"><option value="">Selecciona hoja...</option></select></div>
                 </div>
+                
+                <div class="check-estructura">
+                    <label>
+                        <input type="checkbox" id="mantenerEstructura1" checked>
+                        Mantener Excel original (solo añadir ESTADO al final)
+                    </label>
+                </div>
+                
                 <button id="btnValidar" class="btn-success">Validar y Descargar</button>
             </div>
             <div class="panel-vista">
@@ -180,6 +192,14 @@
                     <div class="form-group"><label>Rango:</label><div class="rango-input-group"><input type="text" id="rango4" placeholder="Automático"><button type="button" class="btn-mouse" onclick="abrirModal('wb4', 'hoja4', 'rango4')">🖱️</button></div></div>
                     <div class="form-group"><label>Columna a contar:</label><select id="col4"><option value="">Selecciona hoja...</option></select></div>
                 </div>
+
+                <div class="check-estructura">
+                    <label>
+                        <input type="checkbox" id="mantenerEstructura3" checked>
+                        Mantener Excel original (solo añadir Conteo al final)
+                    </label>
+                </div>
+
                 <button id="btnContar" class="btn-success" style="background-color: var(--count-color);">Contar y Descargar</button>
             </div>
             <div class="panel-vista">
@@ -222,6 +242,14 @@
                         <select id="col6_valor"><option value="">Selecciona hoja...</option></select>
                     </div>
                 </div>
+
+                <div class="check-estructura">
+                    <label>
+                        <input type="checkbox" id="mantenerEstructura5" checked>
+                        Mantener Excel original (solo añadir el valor al final)
+                    </label>
+                </div>
+
                 <button id="btnBuscarV" class="btn-success" style="background-color: var(--vlookup-color);">Cruzar y Descargar</button>
             </div>
             
@@ -370,7 +398,6 @@
             });
         }
 
-        // SOPORTA MÚLTIPLES SELECTS A LA VEZ (como colSelectId siendo Array)
         function actualizarHojaVista(workbook, nombreHoja, colSelectId, headId, bodyId, infoId, rangoInputId) {
             if(!workbook || !nombreHoja) return;
             const rangoVal = document.getElementById(rangoInputId).value;
@@ -379,21 +406,16 @@
             try { jsonExcel = XLSX.utils.sheet_to_json(workbook.Sheets[nombreHoja], options); } 
             catch (error) { document.getElementById(infoId).textContent = "Error al leer. Verifica el rango."; return; }
 
-            // Llenar los selects
             const selectsTargets = Array.isArray(colSelectId) ? colSelectId : [colSelectId];
             const columnas = jsonExcel.length > 0 ? Object.keys(jsonExcel[0]) : [];
             
             selectsTargets.forEach(idSelect => {
                 const sel = document.getElementById(idSelect);
-                if(sel) {
-                    sel.innerHTML = '';
-                    columnas.forEach(col => sel.appendChild(new Option(col, col)));
-                }
+                if(sel) { sel.innerHTML = ''; columnas.forEach(col => sel.appendChild(new Option(col, col))); }
             });
 
             const thead = document.getElementById(headId); const tbody = document.getElementById(bodyId);
             thead.innerHTML = ''; tbody.innerHTML = '';
-
             if (jsonExcel.length === 0) { document.getElementById(infoId).textContent = "Sin datos en ese rango."; return; }
 
             const limite = jsonExcel.length; 
@@ -426,6 +448,7 @@
             const nombreHoja1 = document.getElementById('hoja1').value; const col1 = document.getElementById('col1').value;
             const nombreHoja2 = document.getElementById('hoja2').value; const col2 = document.getElementById('col2').value;
             const rangoVal1 = document.getElementById('rango1').value; const rangoVal2 = document.getElementById('rango2').value;
+            const mantenerEstructura = document.getElementById('mantenerEstructura1').checked; // <-- LÓGICA DE ESTRUCTURA
 
             const optsRef = getSheetJsOptions(rangoVal2);
             const jsonReferencia = XLSX.utils.sheet_to_json(wb2.Sheets[nombreHoja2], optsRef);
@@ -438,8 +461,17 @@
                 const valorCelda = fila[col1] !== undefined ? String(fila[col1]).trim() : "";
                 const esValido = setReferencia.has(valorCelda);
                 
-                let nuevaFila = { "Archivo Origen": fileName1, "Hoja Origen": nombreHoja1 };
+                let nuevaFila = {};
+                // Si NO se mantiene la estructura original, inyectamos Archivo y Hoja Origen primero
+                if (!mantenerEstructura) {
+                    nuevaFila["Archivo Origen"] = fileName1;
+                    nuevaFila["Hoja Origen"] = nombreHoja1;
+                }
+                
+                // Copiamos las columnas originales manteniendo su orden exacto
                 Object.assign(nuevaFila, fila); 
+                
+                // Inyectamos las columnas de resultados al final
                 nuevaFila['ESTADOS'] = esValido ? 'DIGITALIZADO' : 'NO DIGITALIZADO'; 
                 nuevaFila['Dato Validado'] = valorCelda; 
                 return nuevaFila;
@@ -466,6 +498,7 @@
             const nombreHoja3 = document.getElementById('hoja3').value; const col3 = document.getElementById('col3').value;
             const nombreHoja4 = document.getElementById('hoja4').value; const col4 = document.getElementById('col4').value;
             const rangoVal3 = document.getElementById('rango3').value; const rangoVal4 = document.getElementById('rango4').value;
+            const mantenerEstructura = document.getElementById('mantenerEstructura3').checked; // <-- LÓGICA DE ESTRUCTURA
 
             const optsContar = getSheetJsOptions(rangoVal4);
             const jsonContar = XLSX.utils.sheet_to_json(wb4.Sheets[nombreHoja4], optsContar);
@@ -479,7 +512,13 @@
             let jsonBase = XLSX.utils.sheet_to_json(wb3.Sheets[nombreHoja3], optsBase);
             jsonBase = jsonBase.map(fila => {
                 const valorCelda = fila[col3] !== undefined ? String(fila[col3]).trim() : "";
-                let nuevaFila = { "Archivo Origen": fileName3, "Hoja Origen": nombreHoja3 };
+                
+                let nuevaFila = {};
+                if (!mantenerEstructura) {
+                    nuevaFila["Archivo Origen"] = fileName3;
+                    nuevaFila["Hoja Origen"] = nombreHoja3;
+                }
+                
                 Object.assign(nuevaFila, fila); 
                 nuevaFila['Cantidad Encontrada'] = mapaConteo[valorCelda] || 0;
                 return nuevaFila;
@@ -497,7 +536,6 @@
         document.getElementById('hoja5').addEventListener('change', e => actualizarHojaVista(wb5, e.target.value, 'col5', 'head5', 'body5', 'info5', 'rango5'));
         document.getElementById('rango5').addEventListener('change', e => actualizarHojaVista(wb5, document.getElementById('hoja5').value, 'col5', 'head5', 'body5', 'info5', 'rango5'));
 
-        // El archivo 6 tiene 2 selects (llave y valor a extraer)
         procesarArchivoGeneral('archivo6', 'wb6', 'hoja6', ['col6_llave', 'col6_valor'], 'head6', 'body6', 'info6', 'rango6');
         document.getElementById('hoja6').addEventListener('change', e => actualizarHojaVista(wb6, e.target.value, ['col6_llave', 'col6_valor'], 'head6', 'body6', 'info6', 'rango6'));
         document.getElementById('rango6').addEventListener('change', e => actualizarHojaVista(wb6, document.getElementById('hoja6').value, ['col6_llave', 'col6_valor'], 'head6', 'body6', 'info6', 'rango6'));
@@ -508,10 +546,10 @@
             const nombreHoja6 = document.getElementById('hoja6').value; const col6_llave = document.getElementById('col6_llave').value;
             const col6_valor = document.getElementById('col6_valor').value;
             const rangoVal5 = document.getElementById('rango5').value; const rangoVal6 = document.getElementById('rango6').value;
+            const mantenerEstructura = document.getElementById('mantenerEstructura5').checked; // <-- LÓGICA DE ESTRUCTURA
 
             if(!col5 || !col6_llave || !col6_valor) return alert("Asegúrate de haber seleccionado todas las columnas.");
 
-            // PASO 1: Crear el diccionario desde el archivo Origen (Archivo 6)
             const optsOrigen = getSheetJsOptions(rangoVal6);
             const jsonOrigen = XLSX.utils.sheet_to_json(wb6.Sheets[nombreHoja6], optsOrigen);
             const mapaExtraccion = {};
@@ -522,19 +560,21 @@
                 }
             });
 
-            // PASO 2: Cruzarlo con el archivo Destino (Archivo 5)
             const optsDestino = getSheetJsOptions(rangoVal5);
             let jsonDestino = XLSX.utils.sheet_to_json(wb5.Sheets[nombreHoja5], optsDestino);
             
             jsonDestino = jsonDestino.map(fila => {
                 const llaveStr = fila[col5] !== undefined ? String(fila[col5]).trim() : "";
-                
-                let nuevaFila = { "Archivo Origen": fileName5, "Hoja Origen": nombreHoja5 };
-                Object.assign(nuevaFila, fila); 
-                
-                // Extraemos el valor, si no existe devolvemos un string vacío
                 const valorExtraido = mapaExtraccion[llaveStr] !== undefined ? mapaExtraccion[llaveStr] : "";
-                nuevaFila[col6_valor + ' (Encontrado)'] = valorExtraido;
+                
+                let nuevaFila = {};
+                if (!mantenerEstructura) {
+                    nuevaFila["Archivo Origen"] = fileName5;
+                    nuevaFila["Hoja Origen"] = nombreHoja5;
+                }
+                
+                Object.assign(nuevaFila, fila); 
+                nuevaFila[col6_valor + ' (Extraído)'] = valorExtraido; // Se añade al final
                 
                 return nuevaFila;
             });
